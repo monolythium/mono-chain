@@ -11,9 +11,11 @@ accounts:
 - name: alice
   coins:
   - 200000000alyth
+  cointype: 60
 - name: bob
   coins:
   - 100000000alyth
+  cointype: 60
 client:
   openapi:
     path: docs/static/openapi.json

@@ -28,6 +28,7 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 
 	"github.com/monolythium/mono-chain/docs"
+	burnmodulekeeper "github.com/monolythium/mono-chain/x/burn/keeper"
 )
 
 const (
@@ -36,7 +37,7 @@ const (
 	// AccountAddressPrefix is the prefix for accounts addresses.
 	AccountAddressPrefix = "mono"
 	// ChainCoinType is the coin type of the chain.
-	ChainCoinType = 60
+	ChainCoinType = 60 // Ethereum
 )
 
 // DefaultNodeHome default home directories for the application daemon
@@ -64,7 +65,8 @@ type App struct {
 	DistrKeeper   distrkeeper.Keeper
 
 	// simulation manager
-	sm *module.SimulationManager
+	sm         *module.SimulationManager
+	BurnKeeper burnmodulekeeper.Keeper
 }
 
 func init() {
@@ -129,6 +131,7 @@ func New(
 		&app.BankKeeper,
 		&app.StakingKeeper,
 		&app.DistrKeeper,
+		&app.BurnKeeper,
 	); err != nil {
 		panic(err)
 	}
