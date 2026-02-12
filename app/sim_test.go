@@ -85,7 +85,7 @@ func BenchmarkSimulation(b *testing.B) {
 	appOptions[flags.FlagHome] = DefaultNodeHome
 
 	bApp := New(logger, db, nil, true, appOptions, fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID))
-	require.Equal(b, Name, bApp.Name())
+	require.Equal(b, AppName, bApp.Name())
 
 	// run randomized simulation
 	_, simParams, simErr := simulation.SimulateFromSeed(
@@ -176,7 +176,7 @@ func TestAppImportExport(t *testing.T) {
 	appOptions[flags.FlagHome] = DefaultNodeHome
 
 	bApp := New(logger, db, nil, true, appOptions, fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID))
-	require.Equal(t, Name, bApp.Name())
+	require.Equal(t, AppName, bApp.Name())
 
 	// Run randomized simulation
 	_, simParams, simErr := simulation.SimulateFromSeed(
@@ -216,7 +216,7 @@ func TestAppImportExport(t *testing.T) {
 	}()
 
 	newApp := New(log.NewNopLogger(), newDB, nil, true, appOptions, fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID))
-	require.Equal(t, Name, newApp.Name())
+	require.Equal(t, AppName, newApp.Name())
 
 	var genesisState GenesisState
 	err = json.Unmarshal(exported.AppState, &genesisState)
@@ -296,7 +296,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	appOptions[flags.FlagHome] = DefaultNodeHome
 
 	bApp := New(logger, db, nil, true, appOptions, fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID))
-	require.Equal(t, Name, bApp.Name())
+	require.Equal(t, AppName, bApp.Name())
 
 	// Run randomized simulation
 	stopEarly, simParams, simErr := simulation.SimulateFromSeed(
@@ -341,7 +341,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	}()
 
 	newApp := New(log.NewNopLogger(), newDB, nil, true, appOptions, fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID))
-	require.Equal(t, Name, newApp.Name())
+	require.Equal(t, AppName, newApp.Name())
 
 	_, err = newApp.InitChain(&abci.RequestInitChain{
 		AppStateBytes: exported.AppState,

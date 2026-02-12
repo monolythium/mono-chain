@@ -3,7 +3,6 @@ package app
 import (
 	"io"
 
-	clienthelpers "cosmossdk.io/client/v2/helpers"
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/depinject"
 	"cosmossdk.io/log"
@@ -33,18 +32,6 @@ import (
 	monomodulekeeper "github.com/monolythium/mono-chain/x/mono/keeper"
 )
 
-const (
-	// Name is the name of the application.
-	Name = "mono"
-	// AccountAddressPrefix is the prefix for accounts addresses.
-	AccountAddressPrefix = "mono"
-	// ChainCoinType is the coin type of the chain.
-	ChainCoinType = 60 // Ethereum
-)
-
-// DefaultNodeHome default home directories for the application daemon
-var DefaultNodeHome string
-
 var (
 	_ runtime.AppI            = (*App)(nil)
 	_ servertypes.Application = (*App)(nil)
@@ -70,15 +57,6 @@ type App struct {
 	sm         *module.SimulationManager
 	BurnKeeper burnmodulekeeper.Keeper
 	MonoKeeper monomodulekeeper.Keeper
-}
-
-func init() {
-	var err error
-	clienthelpers.EnvPrefix = Name
-	DefaultNodeHome, err = clienthelpers.GetNodeHomeDirectory("." + Name)
-	if err != nil {
-		panic(err)
-	}
 }
 
 // AppConfig returns the default app config.
@@ -221,19 +199,7 @@ func (app *App) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig
 	}
 
 	// register app's OpenAPI routes.
-	docs.RegisterOpenAPIService(Name, apiSvr.Router)
-}
-
-// GetMaccPerms returns a copy of the module account permissions
-//
-// NOTE: This is solely to be used for testing purposes.
-func GetMaccPerms() map[string][]string {
-	dup := make(map[string][]string)
-	for _, perms := range moduleAccPerms {
-		dup[perms.GetAccount()] = perms.GetPermissions()
-	}
-
-	return dup
+	docs.RegisterOpenAPIService(AppName, apiSvr.Router)
 }
 
 // setAnteHandler creates and sets the custom ante handler chain.
@@ -251,21 +217,4 @@ func (app *App) setAnteHandler(txConfig client.TxConfig) {
 		panic(err)
 	}
 	app.SetAnteHandler(anteHandler)
-}
-
-// BlockedAddresses returns all the app's blocked account addresses.
-func BlockedAddresses() map[string]bool {
-	result := make(map[string]bool)
-
-	if len(blockAccAddrs) > 0 {
-		for _, addr := range blockAccAddrs {
-			result[addr] = true
-		}
-	} else {
-		for addr := range GetMaccPerms() {
-			result[addr] = true
-		}
-	}
-
-	return result
 }

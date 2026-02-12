@@ -16,6 +16,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/stretchr/testify/require"
 
+	"github.com/monolythium/mono-chain/app"
 	"github.com/monolythium/mono-chain/x/burn/keeper"
 	module "github.com/monolythium/mono-chain/x/burn/module"
 	"github.com/monolythium/mono-chain/x/burn/types"
@@ -113,6 +114,7 @@ func initBurnFixture(t *testing.T, mockBank *mockBankKeeper) *burnFixture {
 	t.Helper()
 
 	encCfg := moduletestutil.MakeTestEncodingConfig(module.AppModule{})
+	require.Equal(t, "mono", sdk.GetConfig().GetBech32AccountAddrPrefix())
 	addressCodec := addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix())
 	storeKey := storetypes.NewKVStoreKey(types.StoreKey)
 	storeService := runtime.NewKVStoreService(storeKey)
@@ -146,11 +148,11 @@ func TestMsgServerBurn_ValidBurn(t *testing.T) {
 	f := initBurnFixture(t, mockBank)
 
 	addr := sdk.AccAddress("test_address_valid_1")
-	burnAmount := sdk.NewCoin("alyth", math.NewInt(100))
+	burnAmount := sdk.NewCoin(app.DefaultBondDenom, math.NewInt(100))
 
-	mockBank.balances[addr.String()] = sdk.NewCoin("alyth", math.NewInt(1000))
-	mockBank.spendable[addr.String()] = sdk.NewCoins(sdk.NewCoin("alyth", math.NewInt(1000)))
-	mockBank.supplies["alyth"] = sdk.NewCoin("alyth", math.NewInt(10000))
+	mockBank.balances[addr.String()] = sdk.NewCoin(app.DefaultBondDenom, math.NewInt(1000))
+	mockBank.spendable[addr.String()] = sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(1000)))
+	mockBank.supplies[app.DefaultBondDenom] = sdk.NewCoin(app.DefaultBondDenom, math.NewInt(10000))
 
 	msg := &types.MsgBurn{
 		FromAddress: addr.String(),
@@ -164,7 +166,7 @@ func TestMsgServerBurn_ValidBurn(t *testing.T) {
 	require.True(t, mockBank.sendCoinsCalled)
 	require.True(t, mockBank.burnCoinsCalled)
 	require.Equal(t, math.NewInt(900), mockBank.balances[addr.String()].Amount)
-	require.Equal(t, math.NewInt(9900), mockBank.supplies["alyth"].Amount)
+	require.Equal(t, math.NewInt(9900), mockBank.supplies[app.DefaultBondDenom].Amount)
 }
 
 func TestMsgServerBurn_InsufficientSpendable(t *testing.T) {
@@ -174,13 +176,13 @@ func TestMsgServerBurn_InsufficientSpendable(t *testing.T) {
 	addr := sdk.AccAddress("test_address_insuf_1")
 
 	// Has balance but not spendable (vesting/locked)
-	mockBank.balances[addr.String()] = sdk.NewCoin("alyth", math.NewInt(1000))
-	mockBank.spendable[addr.String()] = sdk.NewCoins(sdk.NewCoin("alyth", math.NewInt(50)))
-	mockBank.supplies["alyth"] = sdk.NewCoin("alyth", math.NewInt(10000))
+	mockBank.balances[addr.String()] = sdk.NewCoin(app.DefaultBondDenom, math.NewInt(1000))
+	mockBank.spendable[addr.String()] = sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(50)))
+	mockBank.supplies[app.DefaultBondDenom] = sdk.NewCoin(app.DefaultBondDenom, math.NewInt(10000))
 
 	msg := &types.MsgBurn{
 		FromAddress: addr.String(),
-		Amount:      sdk.NewCoin("alyth", math.NewInt(100)),
+		Amount:      sdk.NewCoin(app.DefaultBondDenom, math.NewInt(100)),
 	}
 
 	_, err := f.msgServer.Burn(f.ctx, msg)
@@ -197,13 +199,13 @@ func TestMsgServerBurn_StateCorruption_BalanceExceedsSupply(t *testing.T) {
 	addr := sdk.AccAddress("test_address_corrupt1")
 
 	// Corrupted: balance > supply
-	mockBank.balances[addr.String()] = sdk.NewCoin("alyth", math.NewInt(2000))
-	mockBank.spendable[addr.String()] = sdk.NewCoins(sdk.NewCoin("alyth", math.NewInt(2000)))
-	mockBank.supplies["alyth"] = sdk.NewCoin("alyth", math.NewInt(1000))
+	mockBank.balances[addr.String()] = sdk.NewCoin(app.DefaultBondDenom, math.NewInt(2000))
+	mockBank.spendable[addr.String()] = sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(2000)))
+	mockBank.supplies[app.DefaultBondDenom] = sdk.NewCoin(app.DefaultBondDenom, math.NewInt(1000))
 
 	msg := &types.MsgBurn{
 		FromAddress: addr.String(),
-		Amount:      sdk.NewCoin("alyth", math.NewInt(100)),
+		Amount:      sdk.NewCoin(app.DefaultBondDenom, math.NewInt(100)),
 	}
 
 	require.Panics(t, func() {
@@ -220,13 +222,13 @@ func TestMsgServerBurn_SupplyUnderflow(t *testing.T) {
 	// User has 100, total supply is 150 (valid state)
 	// But trying to burn 200 (more than supply)
 	// This tests the supply underflow check at line 48
-	mockBank.balances[addr.String()] = sdk.NewCoin("alyth", math.NewInt(100))
-	mockBank.spendable[addr.String()] = sdk.NewCoins(sdk.NewCoin("alyth", math.NewInt(100)))
-	mockBank.supplies["alyth"] = sdk.NewCoin("alyth", math.NewInt(150))
+	mockBank.balances[addr.String()] = sdk.NewCoin(app.DefaultBondDenom, math.NewInt(100))
+	mockBank.spendable[addr.String()] = sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(100)))
+	mockBank.supplies[app.DefaultBondDenom] = sdk.NewCoin(app.DefaultBondDenom, math.NewInt(150))
 
 	msg := &types.MsgBurn{
 		FromAddress: addr.String(),
-		Amount:      sdk.NewCoin("alyth", math.NewInt(200)),
+		Amount:      sdk.NewCoin(app.DefaultBondDenom, math.NewInt(200)),
 	}
 
 	_, err := f.msgServer.Burn(f.ctx, msg)
@@ -251,13 +253,13 @@ func TestMsgServerBurn_SupplyLessThanBurn(t *testing.T) {
 
 	// Simpler: Multiple users, total supply 100, one user has 100
 	// User tries to burn 150 - has it spendable but supply is only 100
-	mockBank.balances[addr1.String()] = sdk.NewCoin("alyth", math.NewInt(100))
-	mockBank.spendable[addr1.String()] = sdk.NewCoins(sdk.NewCoin("alyth", math.NewInt(150))) // Spendable > balance (edge case)
-	mockBank.supplies["alyth"] = sdk.NewCoin("alyth", math.NewInt(100))
+	mockBank.balances[addr1.String()] = sdk.NewCoin(app.DefaultBondDenom, math.NewInt(100))
+	mockBank.spendable[addr1.String()] = sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(150))) // Spendable > balance (edge case)
+	mockBank.supplies[app.DefaultBondDenom] = sdk.NewCoin(app.DefaultBondDenom, math.NewInt(100))
 
 	msg := &types.MsgBurn{
 		FromAddress: addr1.String(),
-		Amount:      sdk.NewCoin("alyth", math.NewInt(150)),
+		Amount:      sdk.NewCoin(app.DefaultBondDenom, math.NewInt(150)),
 	}
 
 	_, err := f.msgServer.Burn(f.ctx, msg)
@@ -274,14 +276,14 @@ func TestMsgServerBurn_BurnCoinsFailure_ShouldPanic(t *testing.T) {
 
 	addr := sdk.AccAddress("test_address_fail_1")
 
-	mockBank.balances[addr.String()] = sdk.NewCoin("alyth", math.NewInt(1000))
-	mockBank.spendable[addr.String()] = sdk.NewCoins(sdk.NewCoin("alyth", math.NewInt(1000)))
-	mockBank.supplies["alyth"] = sdk.NewCoin("alyth", math.NewInt(10000))
+	mockBank.balances[addr.String()] = sdk.NewCoin(app.DefaultBondDenom, math.NewInt(1000))
+	mockBank.spendable[addr.String()] = sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(1000)))
+	mockBank.supplies[app.DefaultBondDenom] = sdk.NewCoin(app.DefaultBondDenom, math.NewInt(10000))
 	mockBank.failBurnCoins = true
 
 	msg := &types.MsgBurn{
 		FromAddress: addr.String(),
-		Amount:      sdk.NewCoin("alyth", math.NewInt(100)),
+		Amount:      sdk.NewCoin(app.DefaultBondDenom, math.NewInt(100)),
 	}
 
 	require.Panics(t, func() {
@@ -304,7 +306,7 @@ func TestMsgServerBurn_InvalidDenom(t *testing.T) {
 func TestMsgServerBurn_ZeroAmount(t *testing.T) {
 	msg := &types.MsgBurn{
 		FromAddress: sdk.AccAddress("test").String(),
-		Amount:      sdk.NewCoin("alyth", math.NewInt(0)),
+		Amount:      sdk.NewCoin(app.DefaultBondDenom, math.NewInt(0)),
 	}
 
 	err := msg.ValidateBasic()
@@ -316,11 +318,11 @@ func TestMsgServerBurn_BurnEntireBalance(t *testing.T) {
 	f := initBurnFixture(t, mockBank)
 
 	addr := sdk.AccAddress("test_address_entire1")
-	balance := sdk.NewCoin("alyth", math.NewInt(500))
+	balance := sdk.NewCoin(app.DefaultBondDenom, math.NewInt(500))
 
 	mockBank.balances[addr.String()] = balance
 	mockBank.spendable[addr.String()] = sdk.NewCoins(balance)
-	mockBank.supplies["alyth"] = sdk.NewCoin("alyth", math.NewInt(10000))
+	mockBank.supplies[app.DefaultBondDenom] = sdk.NewCoin(app.DefaultBondDenom, math.NewInt(10000))
 
 	msg := &types.MsgBurn{
 		FromAddress: addr.String(),
@@ -332,13 +334,13 @@ func TestMsgServerBurn_BurnEntireBalance(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 	require.True(t, mockBank.balances[addr.String()].IsZero())
-	require.Equal(t, math.NewInt(9500), mockBank.supplies["alyth"].Amount)
+	require.Equal(t, math.NewInt(9500), mockBank.supplies[app.DefaultBondDenom].Amount)
 }
 
 func TestMsgServerBurn_InvalidAddress(t *testing.T) {
 	msg := &types.MsgBurn{
 		FromAddress: "invalid_address",
-		Amount:      sdk.NewCoin("alyth", math.NewInt(100)),
+		Amount:      sdk.NewCoin(app.DefaultBondDenom, math.NewInt(100)),
 	}
 
 	err := msg.ValidateBasic()
@@ -351,7 +353,7 @@ func TestMsgServerBurn_NegativeAmount(t *testing.T) {
 	// but we can test the validation path
 	msg := &types.MsgBurn{
 		FromAddress: sdk.AccAddress("test").String(),
-		Amount:      sdk.Coin{Denom: "alyth", Amount: math.NewInt(-100)},
+		Amount:      sdk.Coin{Denom: app.DefaultBondDenom, Amount: math.NewInt(-100)},
 	}
 
 	err := msg.ValidateBasic()
@@ -361,7 +363,7 @@ func TestMsgServerBurn_NegativeAmount(t *testing.T) {
 // Test NewMsgBurn constructor
 func TestNewMsgBurn_Constructor(t *testing.T) {
 	addr := sdk.AccAddress("test").String()
-	coin := sdk.NewCoin("alyth", math.NewInt(100))
+	coin := sdk.NewCoin(app.DefaultBondDenom, math.NewInt(100))
 
 	msg := types.NewMsgBurn(addr, coin)
 
@@ -372,7 +374,7 @@ func TestNewMsgBurn_Constructor(t *testing.T) {
 // Test GetSigners returns correct address
 func TestMsgBurn_GetSigners_Valid(t *testing.T) {
 	addr := sdk.AccAddress("signer")
-	msg := types.NewMsgBurn(addr.String(), sdk.NewCoin("alyth", math.NewInt(100)))
+	msg := types.NewMsgBurn(addr.String(), sdk.NewCoin(app.DefaultBondDenom, math.NewInt(100)))
 
 	signers := msg.GetSigners()
 
@@ -384,7 +386,7 @@ func TestMsgBurn_GetSigners_Valid(t *testing.T) {
 func TestMsgBurn_GetSigners_InvalidPanics(t *testing.T) {
 	msg := &types.MsgBurn{
 		FromAddress: "invalid",
-		Amount:      sdk.NewCoin("alyth", math.NewInt(100)),
+		Amount:      sdk.NewCoin(app.DefaultBondDenom, math.NewInt(100)),
 	}
 
 	require.Panics(t, func() {
@@ -400,17 +402,17 @@ func TestMsgServerBurn_PostBurnBalanceInconsistent(t *testing.T) {
 	addr := sdk.AccAddress("test_balance_check")
 
 	// Setup initial state
-	mockBank.balances[addr.String()] = sdk.NewCoin("alyth", math.NewInt(1000))
-	mockBank.spendable[addr.String()] = sdk.NewCoins(sdk.NewCoin("alyth", math.NewInt(1000)))
-	mockBank.supplies["alyth"] = sdk.NewCoin("alyth", math.NewInt(10000))
+	mockBank.balances[addr.String()] = sdk.NewCoin(app.DefaultBondDenom, math.NewInt(1000))
+	mockBank.spendable[addr.String()] = sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(1000)))
+	mockBank.supplies[app.DefaultBondDenom] = sdk.NewCoin(app.DefaultBondDenom, math.NewInt(10000))
 
 	// Simulate race condition: balance changes incorrectly after burn
 	// Should be 900 after burning 100, but returns 950
-	mockBank.balanceOnSecondCall = sdk.NewCoin("alyth", math.NewInt(950))
+	mockBank.balanceOnSecondCall = sdk.NewCoin(app.DefaultBondDenom, math.NewInt(950))
 
 	msg := &types.MsgBurn{
 		FromAddress: addr.String(),
-		Amount:      sdk.NewCoin("alyth", math.NewInt(100)),
+		Amount:      sdk.NewCoin(app.DefaultBondDenom, math.NewInt(100)),
 	}
 
 	// Should panic when post-burn verification detects inconsistency
@@ -431,17 +433,17 @@ func TestMsgServerBurn_PostBurnSupplyInconsistent(t *testing.T) {
 	addr := sdk.AccAddress("test_supply_check")
 
 	// Setup initial state
-	mockBank.balances[addr.String()] = sdk.NewCoin("alyth", math.NewInt(1000))
-	mockBank.spendable[addr.String()] = sdk.NewCoins(sdk.NewCoin("alyth", math.NewInt(1000)))
-	mockBank.supplies["alyth"] = sdk.NewCoin("alyth", math.NewInt(10000))
+	mockBank.balances[addr.String()] = sdk.NewCoin(app.DefaultBondDenom, math.NewInt(1000))
+	mockBank.spendable[addr.String()] = sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(1000)))
+	mockBank.supplies[app.DefaultBondDenom] = sdk.NewCoin(app.DefaultBondDenom, math.NewInt(10000))
 
 	// Simulate consensus failure: supply changes incorrectly after burn
 	// Should be 9900 after burning 100, but returns 9950
-	mockBank.supplyOnSecondCall = sdk.NewCoin("alyth", math.NewInt(9950))
+	mockBank.supplyOnSecondCall = sdk.NewCoin(app.DefaultBondDenom, math.NewInt(9950))
 
 	msg := &types.MsgBurn{
 		FromAddress: addr.String(),
-		Amount:      sdk.NewCoin("alyth", math.NewInt(100)),
+		Amount:      sdk.NewCoin(app.DefaultBondDenom, math.NewInt(100)),
 	}
 
 	// Should panic when post-burn verification detects inconsistency

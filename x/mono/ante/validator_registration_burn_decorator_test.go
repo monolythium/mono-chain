@@ -1,6 +1,7 @@
 package ante_test
 
 import (
+	"os"
 	"testing"
 
 	"cosmossdk.io/math"
@@ -15,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	protov2 "google.golang.org/protobuf/proto"
 
+	"github.com/monolythium/mono-chain/app"
 	burnmoduletypes "github.com/monolythium/mono-chain/x/burn/types"
 	monoante "github.com/monolythium/mono-chain/x/mono/ante"
 	"github.com/monolythium/mono-chain/x/mono/keeper"
@@ -44,6 +46,7 @@ type depositFixture struct {
 func initDepositFixture(t *testing.T, registrationFee sdk.Coin) *depositFixture {
 	t.Helper()
 
+	require.Equal(t, "mono", sdk.GetConfig().GetBech32AccountAddrPrefix())
 	encCfg := moduletestutil.MakeTestEncodingConfig(module.AppModule{})
 	addressCodec := addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix())
 	storeKey := storetypes.NewKVStoreKey(types.StoreKey)
@@ -72,6 +75,13 @@ func initDepositFixture(t *testing.T, registrationFee sdk.Coin) *depositFixture 
 		keeper:    k,
 		decorator: monoante.NewValidatorRegistrationBurnDecorator(k),
 	}
+}
+
+func TestMain(m *testing.M) {
+	cfg := sdk.GetConfig()
+	app.SetBech32Prefixes(cfg)
+	app.SetBip44CoinType(cfg)
+	os.Exit(m.Run())
 }
 
 // Helper: build a MsgCreateValidator from raw address bytes
@@ -303,6 +313,7 @@ func TestValidatorRegistrationBurn_DuplicateBurn(t *testing.T) {
 
 func TestValidatorRegistrationBurn_ParamsReadFailure(t *testing.T) {
 	// Create a keeper with a store but do NOT set params.
+	require.Equal(t, "mono", sdk.GetConfig().GetBech32AccountAddrPrefix())
 	encCfg := moduletestutil.MakeTestEncodingConfig(module.AppModule{})
 	addressCodec := addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix())
 	storeKey := storetypes.NewKVStoreKey(types.StoreKey)
