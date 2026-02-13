@@ -78,7 +78,7 @@ func newTestnetApp(logger log.Logger, db dbm.DB, traceStore io.Writer, appOpts s
 func initAppForTestnet(app *app.App, args valArgs) *app.App {
 	// Required Changes:
 	//
-	ctx := app.App.NewUncachedContext(true, cmtproto.Header{})
+	ctx := app.NewUncachedContext(true, cmtproto.Header{})
 
 	pubkey := &ed25519.PubKey{Key: args.newValPubKey.Bytes()}
 	pubkeyAny, err := codectypes.NewAnyWithValue(pubkey)

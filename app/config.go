@@ -3,6 +3,13 @@ package app
 import (
 	clienthelpers "cosmossdk.io/client/v2/helpers"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+
+	// minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	burnmoduletypes "github.com/monolythium/mono-chain/x/burn/types"
+	monomoduletypes "github.com/monolythium/mono-chain/x/mono/types"
 )
 
 const (
@@ -21,12 +28,30 @@ const (
 	DefaultBondDenom = "alyth"
 )
 
+// maccPerms defines module account permissions.
+var maccPerms = map[string][]string{
+	authtypes.FeeCollectorName: nil,
+	distrtypes.ModuleName:      nil,
+	// minttypes.ModuleName:           {authtypes.Minter},
+	stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
+	stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
+	burnmoduletypes.ModuleName:     {authtypes.Burner},
+	monomoduletypes.ModuleName:     {authtypes.Burner},
+}
+
+// blockAccAddrs are addresses that cannot receive funds.
+var blockAccAddrs = []string{
+	authtypes.FeeCollectorName,
+	distrtypes.ModuleName,
+	stakingtypes.BondedPoolName,
+	stakingtypes.NotBondedPoolName,
+}
+
 // DefaultNodeHome default home directory for the application daemon.
 var DefaultNodeHome string
 
 func init() {
 	sdk.DefaultBondDenom = DefaultBondDenom
-
 	clienthelpers.EnvPrefix = AppName
 
 	var err error
@@ -52,8 +77,8 @@ func SetBip44CoinType(config *sdk.Config) {
 // GetMaccPerms returns a copy of the module account permissions.
 func GetMaccPerms() map[string][]string {
 	dup := make(map[string][]string)
-	for _, perms := range moduleAccPerms {
-		dup[perms.GetAccount()] = perms.GetPermissions()
+	for acc, perms := range maccPerms {
+		dup[acc] = perms
 	}
 	return dup
 }
@@ -62,12 +87,12 @@ func GetMaccPerms() map[string][]string {
 func BlockedAddresses() map[string]bool {
 	result := make(map[string]bool)
 	if len(blockAccAddrs) > 0 {
-		for _, addr := range blockAccAddrs {
-			result[addr] = true
+		for _, name := range blockAccAddrs {
+			result[authtypes.NewModuleAddress(name).String()] = true
 		}
 	} else {
-		for addr := range GetMaccPerms() {
-			result[addr] = true
+		for name := range GetMaccPerms() {
+			result[authtypes.NewModuleAddress(name).String()] = true
 		}
 	}
 	return result

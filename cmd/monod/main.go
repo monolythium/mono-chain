@@ -7,7 +7,6 @@ import (
 	clienthelpers "cosmossdk.io/client/v2/helpers"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/monolythium/mono-chain/app"
 	"github.com/monolythium/mono-chain/cmd/monod/cmd"
 )

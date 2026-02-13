@@ -53,6 +53,9 @@ func NewAppModule(
 // IsAppModule implements the appmodule.AppModule interface.
 func (AppModule) IsAppModule() {}
 
+// IsOnePerModuleType implements the depinject.OnePerModuleType interface.
+func (AppModule) IsOnePerModuleType() {}
+
 // Name returns the name of the module as a string.
 func (AppModule) Name() string {
 	return types.ModuleName
