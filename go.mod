@@ -1,16 +1,40 @@
 module github.com/monolythium/mono-chain
 
-go 1.24.1
+go 1.25.7
 
 replace (
+	// CVE-2026-26958: MultiScalarMult invalid results with non-identity receiver
+	// indirect via cosmos-sdk/crypto/keys/ed25519 -> ed25519consensus
+	// TODO: Remove when cosmos-sdk bumps
+	filippo.io/edwards25519 v1.1.0 => filippo.io/edwards25519 v1.1.1
+
 	// cosmos/evm requires cosmos-patched keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
+
+	// GHSA-fj2x-735w-74vq: unchecked memory allocation in vector deserialization
+	// indirect via cosmos/evm -> geth/core/vm -> gnark-crypto/ecc (BN254 precompiles)
+	// TODO: Remove when cosmos/evm bumps
+	github.com/consensys/gnark-crypto v0.18.0 => github.com/consensys/gnark-crypto v0.18.2
+
 	// cosmos/evm requires its own go-ethereum fork
 	github.com/ethereum/go-ethereum => github.com/cosmos/go-ethereum v1.16.2-cosmos-1
-	// fix upstream GHSA-h395-qcrw-5vmq vulnerability.
+
+	// fix upstream GHSA-h395-qcrw-5vmq vulnerability
 	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.9.1
+
+	// CVE-2025-8959: symlink path traversal in go-getter subdirectory download
+	// indirect via x/upgrade -> cosmovisor auto-download
+	// TODO: Remove when x/upgrade bumps upstream
+	github.com/hashicorp/go-getter v1.7.8 => github.com/hashicorp/go-getter v1.7.9
+
 	// replace broken goleveldb
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
+
+	// CVE-2025-58058: uncontrolled memory allocation via crafted LZMA archives
+	// indirect via x/upgrade -> go-getter decompression
+	// TODO: Remove when go-getter bumps upstream
+	github.com/ulikunitz/xz v0.5.11 => github.com/ulikunitz/xz v0.5.15
+
 	// replace broken vanity url
 	nhooyr.io/websocket => github.com/coder/websocket v1.8.7
 )
@@ -129,8 +153,8 @@ require (
 	github.com/butuzov/ireturn v0.3.1 // indirect
 	github.com/butuzov/mirror v1.3.0 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
-	github.com/bytedance/sonic v1.14.2 // indirect
-	github.com/bytedance/sonic/loader v0.4.0 // indirect
+	github.com/bytedance/sonic v1.15.0 // indirect
+	github.com/bytedance/sonic/loader v0.5.0 // indirect
 	github.com/catenacyber/perfsprint v0.8.2 // indirect
 	github.com/ccojocar/zxcvbn-go v1.0.2 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
@@ -189,6 +213,9 @@ require (
 	github.com/emicklei/dot v1.6.2 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.35.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
+
+	// AIKIDO-2025-10670: weak Fiat-Shamir in verify_cell_kzg_proof_batch - UNREACHABLE
+	// indirect via cosmos/evm -> geth/crypto/kzg4844 -> c-kzg-4844/v2
 	github.com/ethereum/c-kzg-4844/v2 v2.1.0 // indirect
 	github.com/ethereum/go-verkle v0.2.2 // indirect
 	github.com/ettle/strcase v0.2.0 // indirect
@@ -319,7 +346,6 @@ require (
 	github.com/minio/highwayhash v1.0.3 // indirect
 	github.com/minio/sha256-simd v1.0.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
-	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/term v0.5.2 // indirect
@@ -338,6 +364,9 @@ require (
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/petermattis/goid v0.0.0-20260113132338-7c7de50cc741 // indirect
+
+	// CVE-2026-26014: nonce reuse in AES-GCM - UNREACHABLE
+	// indirect via cosmos/evm -> geth/p2p -> pion/stun -> pion/dtls
 	github.com/pion/dtls/v2 v2.2.7 // indirect
 	github.com/pion/logging v0.2.2 // indirect
 	github.com/pion/stun/v2 v2.0.0 // indirect
