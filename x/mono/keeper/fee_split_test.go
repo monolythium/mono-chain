@@ -705,6 +705,31 @@ func TestProcessFeeSplit_FallbackBurnCoinsFails(t *testing.T) {
 	require.Equal(t, math.NewInt(900), mockBank.burnCoinsCalls[0].Amt.AmountOf(app.DefaultBondDenom))
 }
 
+func TestProcessFeeSplit_MalformedValidatorOperatorAddress(t *testing.T) {
+	mockBank := newFeeSplitMockBank()
+	mockStaking := newFeeSplitMockStaking()
+	f := initFeeSplitFixture(t, mockBank, mockStaking)
+	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
+
+	f.setFeeCollectorBalance(sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(1000))))
+
+	consAddr := sdk.ConsAddress("proposer_cons_bad__1")
+	// Validator exists but has a corrupted OperatorAddress
+	mockStaking.validators[consAddr.String()] = stakingtypes.Validator{
+		OperatorAddress: "not_valid_bech32",
+	}
+	ctx := f.withProposer(consAddr)
+
+	err := f.keeper.ProcessFeeSplit(ctx)
+
+	require.NoError(t, err, "malformed operator should fallback to burn")
+	// Main burn (900) + fallback burn of proposer share (100)
+	require.Len(t, mockBank.burnCoinsCalls, 2)
+	require.Equal(t, math.NewInt(900), mockBank.burnCoinsCalls[0].Amt.AmountOf(app.DefaultBondDenom))
+	require.Equal(t, math.NewInt(100), mockBank.burnCoinsCalls[1].Amt.AmountOf(app.DefaultBondDenom))
+	require.Empty(t, mockBank.sendModToAccCalls)
+}
+
 func TestProcessFeeSplit_ParamsNotSet(t *testing.T) {
 	mockBank := newFeeSplitMockBank()
 	mockStaking := newFeeSplitMockStaking()
@@ -717,6 +742,72 @@ func TestProcessFeeSplit_ParamsNotSet(t *testing.T) {
 
 	require.Error(t, err, "should fail when params not initialized")
 	require.Contains(t, err.Error(), "failed to get mono params")
+}
+
+func TestProcessFeeSplit_ProductionScaleAmounts(t *testing.T) {
+	mockBank := newFeeSplitMockBank()
+	mockStaking := newFeeSplitMockStaking()
+	f := initFeeSplitFixture(t, mockBank, mockStaking)
+	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
+
+	// 100 LYTH = 100_000_000_000_000_000_000 alyth (1e20)
+	feeAmount := math.NewIntWithDecimal(100, 18)
+	f.setFeeCollectorBalance(sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, feeAmount)))
+
+	consAddr := sdk.ConsAddress("proposer_cons_prod_1")
+	valAddr := sdk.ValAddress("proposer_val_prod__1")
+	mockStaking.validators[consAddr.String()] = stakingtypes.Validator{
+		OperatorAddress: valAddr.String(),
+	}
+	ctx := f.withProposer(consAddr)
+
+	err := f.keeper.ProcessFeeSplit(ctx)
+	require.NoError(t, err)
+
+	// 1e20 * 0.90 = 9e19
+	expectedBurn := math.NewIntWithDecimal(90, 18)
+	// 1e20 - 9e19 = 1e19
+	expectedProposer := math.NewIntWithDecimal(10, 18)
+
+	burnAmt := mockBank.burnCoinsCalls[0].Amt.AmountOf(app.DefaultBondDenom)
+	proposerAmt := mockBank.sendModToAccCalls[0].Amt.AmountOf(app.DefaultBondDenom)
+
+	require.Equal(t, expectedBurn, burnAmt)
+	require.Equal(t, expectedProposer, proposerAmt)
+	require.Equal(t, feeAmount, burnAmt.Add(proposerAmt), "total must be conserved at 18-decimal scale")
+}
+
+func TestProcessFeeSplit_ProductionScaleRoundingDust(t *testing.T) {
+	mockBank := newFeeSplitMockBank()
+	mockStaking := newFeeSplitMockStaking()
+	f := initFeeSplitFixture(t, mockBank, mockStaking)
+	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
+
+	// 1 LYTH + 1 alyth = 1_000_000_000_000_000_001
+	// burn = 1_000_000_000_000_000_001 * 0.90 = 900_000_000_000_000_000.9 => truncated to 900_000_000_000_000_000
+	// proposer = 1_000_000_000_000_000_001 - 900_000_000_000_000_000 = 100_000_000_000_000_001
+	feeAmount := math.NewIntWithDecimal(1, 18).Add(math.OneInt())
+	f.setFeeCollectorBalance(sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, feeAmount)))
+
+	consAddr := sdk.ConsAddress("proposer_cons_dust_1")
+	valAddr := sdk.ValAddress("proposer_val_dust__1")
+	mockStaking.validators[consAddr.String()] = stakingtypes.Validator{
+		OperatorAddress: valAddr.String(),
+	}
+	ctx := f.withProposer(consAddr)
+
+	err := f.keeper.ProcessFeeSplit(ctx)
+	require.NoError(t, err)
+
+	expectedBurn := math.NewIntWithDecimal(9, 17)                        // 9e17
+	expectedProposer := math.NewIntWithDecimal(1, 17).Add(math.OneInt()) // 1e17 + 1
+
+	burnAmt := mockBank.burnCoinsCalls[0].Amt.AmountOf(app.DefaultBondDenom)
+	proposerAmt := mockBank.sendModToAccCalls[0].Amt.AmountOf(app.DefaultBondDenom)
+
+	require.Equal(t, expectedBurn, burnAmt)
+	require.Equal(t, expectedProposer, proposerAmt)
+	require.Equal(t, feeAmount, burnAmt.Add(proposerAmt), "total must be conserved even with rounding dust")
 }
 
 func TestProcessFeeSplit_HighPrecisionPercent(t *testing.T) {

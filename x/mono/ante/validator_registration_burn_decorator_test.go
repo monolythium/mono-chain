@@ -340,6 +340,24 @@ func TestValidatorRegistrationBurn_DuplicateBurn(t *testing.T) {
 	require.ErrorIs(t, err, types.ErrDuplicateRegistrationInfo)
 }
 
+func TestValidatorRegistrationBurn_MinSelfDelegationBelowFee(t *testing.T) {
+	f := initDepositFixture(t, regFee)
+
+	lowSelfDelegation := &stakingtypes.MsgCreateValidator{
+		ValidatorAddress:  sdk.ValAddress(addr1).String(),
+		MinSelfDelegation: VALIDATOR_LYTH_REQUIREMENT.Sub(math.OneInt()),
+		Value:             sdk.NewCoin(sdk.DefaultBondDenom, VALIDATOR_LYTH_REQUIREMENT),
+	}
+	tx := mockTx{msgs: []sdk.Msg{
+		makeBurnMsg(addr1, VALIDATOR_LYTH_REQUIREMENT),
+		lowSelfDelegation,
+	}}
+	_, err := f.decorator.AnteHandle(f.ctx, tx, false, noopAnteHandler)
+
+	require.Error(t, err)
+	require.ErrorIs(t, err, types.ErrInsufficientMinSelfDelegation)
+}
+
 func TestValidatorRegistrationBurn_ParamsReadFailure(t *testing.T) {
 	// Create a keeper with a store but do NOT set params.
 	require.Equal(t, "mono", sdk.GetConfig().GetBech32AccountAddrPrefix())

@@ -20,3 +20,13 @@ func TestParamsQuery(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, &types.QueryParamsResponse{Params: params}, response)
 }
+
+func TestParamsQuery_NilRequest(t *testing.T) {
+	f := initFixture(t)
+
+	qs := keeper.NewQueryServerImpl(f.keeper)
+
+	_, err := qs.Params(f.ctx, nil)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "invalid request")
+}

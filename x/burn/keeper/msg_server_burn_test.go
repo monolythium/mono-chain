@@ -394,6 +394,67 @@ func TestMsgBurn_GetSigners_InvalidPanics(t *testing.T) {
 	})
 }
 
+func TestMsgServerBurn_InvalidFromAddress(t *testing.T) {
+	mockBank := newMockBankKeeper()
+	f := initBurnFixture(t, mockBank)
+
+	msg := &types.MsgBurn{
+		FromAddress: "not_valid_bech32",
+		Amount:      sdk.NewCoin(app.DefaultBondDenom, math.NewInt(100)),
+	}
+
+	_, err := f.msgServer.Burn(f.ctx, msg)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "invalid from address")
+}
+
+func TestMsgServerBurn_SendCoinsFailure(t *testing.T) {
+	mockBank := newMockBankKeeper()
+	f := initBurnFixture(t, mockBank)
+
+	addr := sdk.AccAddress("test_address_sendf_1")
+
+	mockBank.balances[addr.String()] = sdk.NewCoin(app.DefaultBondDenom, math.NewInt(1000))
+	mockBank.spendable[addr.String()] = sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(1000)))
+	mockBank.supplies[app.DefaultBondDenom] = sdk.NewCoin(app.DefaultBondDenom, math.NewInt(10000))
+	mockBank.failSendCoins = true
+
+	msg := &types.MsgBurn{
+		FromAddress: addr.String(),
+		Amount:      sdk.NewCoin(app.DefaultBondDenom, math.NewInt(100)),
+	}
+
+	_, err := f.msgServer.Burn(f.ctx, msg)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "insufficient")
+	require.True(t, mockBank.sendCoinsCalled)
+	require.False(t, mockBank.burnCoinsCalled, "burn must not execute if transfer failed")
+}
+
+func TestMsgServerBurn_EntireSupplyToZero(t *testing.T) {
+	mockBank := newMockBankKeeper()
+	f := initBurnFixture(t, mockBank)
+
+	addr := sdk.AccAddress("test_address_tozero")
+
+	// User holds entire supply
+	mockBank.balances[addr.String()] = sdk.NewCoin(app.DefaultBondDenom, math.NewInt(100))
+	mockBank.spendable[addr.String()] = sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(100)))
+	mockBank.supplies[app.DefaultBondDenom] = sdk.NewCoin(app.DefaultBondDenom, math.NewInt(100))
+
+	msg := &types.MsgBurn{
+		FromAddress: addr.String(),
+		Amount:      sdk.NewCoin(app.DefaultBondDenom, math.NewInt(100)),
+	}
+
+	resp, err := f.msgServer.Burn(f.ctx, msg)
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.True(t, mockBank.balances[addr.String()].IsZero())
+	require.True(t, mockBank.supplies[app.DefaultBondDenom].IsZero(), "supply must reach zero cleanly")
+}
+
 // Test post-burn balance verification catches inconsistent state
 func TestMsgServerBurn_PostBurnBalanceInconsistent(t *testing.T) {
 	mockBank := newMockBankKeeper()

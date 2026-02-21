@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -32,6 +33,18 @@ func TestMsgUpdateParams(t *testing.T) {
 				Authority: "invalid",
 				Params:    params,
 			},
+			expErr:    true,
+			expErrMsg: "invalid authority",
+		},
+		{
+			name: "wrong authority",
+			input: func() *types.MsgUpdateParams {
+				wrongAddr, _ := f.addressCodec.BytesToString(bytes.Repeat([]byte{0xFF}, 20))
+				return &types.MsgUpdateParams{
+					Authority: wrongAddr,
+					Params:    params,
+				}
+			}(),
 			expErr:    true,
 			expErrMsg: "invalid authority",
 		},
