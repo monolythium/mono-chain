@@ -1,7 +1,6 @@
 package burn
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 
@@ -19,13 +18,10 @@ import (
 )
 
 var (
-	_ module.AppModuleBasic = (*AppModule)(nil)
-	_ module.AppModule      = (*AppModule)(nil)
-	_ module.HasGenesis     = (*AppModule)(nil)
+	_ module.AppModuleBasic = AppModule{}
+	_ module.HasGenesis     = AppModule{}
 
-	_ appmodule.AppModule       = (*AppModule)(nil)
-	_ appmodule.HasBeginBlocker = (*AppModule)(nil)
-	_ appmodule.HasEndBlocker   = (*AppModule)(nil)
+	_ appmodule.AppModule = AppModule{}
 )
 
 // AppModule implements the AppModule interface that defines the inter-dependent methods that modules need to implement
@@ -132,15 +128,3 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, _ codec.JSONCodec) json.RawMe
 // It should be incremented on each consensus-breaking change introduced by the module.
 // To avoid wrong/empty versions, the initial version should be set to 1.
 func (AppModule) ConsensusVersion() uint64 { return 1 }
-
-// BeginBlock contains the logic that is automatically triggered at the beginning of each block.
-// The begin block implementation is optional.
-func (am AppModule) BeginBlock(_ context.Context) error {
-	return nil
-}
-
-// EndBlock contains the logic that is automatically triggered at the end of each block.
-// The end block implementation is optional.
-func (am AppModule) EndBlock(_ context.Context) error {
-	return nil
-}

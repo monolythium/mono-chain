@@ -19,13 +19,11 @@ import (
 )
 
 var (
-	_ module.AppModuleBasic = (*AppModule)(nil)
-	_ module.AppModule      = (*AppModule)(nil)
-	_ module.HasGenesis     = (*AppModule)(nil)
+	_ module.AppModuleBasic = AppModule{}
+	_ module.HasGenesis     = AppModule{}
 
-	_ appmodule.AppModule       = (*AppModule)(nil)
-	_ appmodule.HasBeginBlocker = (*AppModule)(nil)
-	_ appmodule.HasEndBlocker   = (*AppModule)(nil)
+	_ appmodule.AppModule       = AppModule{}
+	_ appmodule.HasBeginBlocker = AppModule{}
 )
 
 // AppModule implements the AppModule interface that defines the inter-dependent methods that modules need to implement
@@ -136,10 +134,4 @@ func (AppModule) ConsensusVersion() uint64 { return 1 }
 // BeginBlock contains the logic that is automatically triggered at the beginning of each block.
 func (am AppModule) BeginBlock(ctx context.Context) error {
 	return am.keeper.ProcessFeeSplit(ctx)
-}
-
-// EndBlock contains the logic that is automatically triggered at the end of each block.
-// The end block implementation is optional.
-func (am AppModule) EndBlock(_ context.Context) error {
-	return nil
 }

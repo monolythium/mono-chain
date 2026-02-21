@@ -550,7 +550,6 @@ func New(
 		// fee_split drains tx fees BEFORE mint creates inflation tokens.
 		// mint creates tokens AFTER fees are processed, so distr only sees minted rewards.
 		monomoduletypes.ModuleName,
-		burnmoduletypes.ModuleName,
 		minttypes.ModuleName,
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
@@ -582,8 +581,6 @@ func New(
 		erc20types.ModuleName,
 		ibcexported.ModuleName,
 		ibctransfertypes.ModuleName,
-		monomoduletypes.ModuleName,
-		burnmoduletypes.ModuleName,
 		minttypes.ModuleName,
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
