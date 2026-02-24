@@ -86,7 +86,7 @@ genesis:
           - alyth
         distribution_frequency: "1"
       continuous_funds:
-        - recipient: "0xb55C20A9883B2866486D345d754e73290Cf444CE"
+        - recipient: "0x0109d03f9e91f3344274e412ca57804fdf9f0ee7"
           percentage: "1.000000000000000000"
     staking:
       params:
