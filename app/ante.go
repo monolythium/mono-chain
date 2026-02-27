@@ -20,13 +20,13 @@ import (
 func (app *App) setAnteHandler(txConfig client.TxConfig, appOpts servertypes.AppOptions) {
 	options := evmante.HandlerOptions{
 		Cdc:                    app.appCodec,
-		AccountKeeper:          app.AuthKeeper,
+		AccountKeeper:          app.AccountKeeper,
 		BankKeeper:             app.BankKeeper,
+		ExtensionOptionChecker: antetypes.HasDynamicFeeExtensionOption,
+		EvmKeeper:              app.EVMKeeper,
+		FeegrantKeeper:         app.FeeGrantKeeper,
 		IBCKeeper:              app.IBCKeeper,
 		FeeMarketKeeper:        app.FeeMarketKeeper,
-		EvmKeeper:              app.EVMKeeper,
-		FeegrantKeeper:         nil,
-		ExtensionOptionChecker: antetypes.HasDynamicFeeExtensionOption,
 		SignModeHandler:        txConfig.SignModeHandler(),
 		SigGasConsumer:         evmante.SigVerificationGasConsumer,
 		MaxTxGasWanted:         cast.ToUint64(appOpts.Get(srvflags.EVMMaxTxGasWanted)),
@@ -42,6 +42,8 @@ func (app *App) setAnteHandler(txConfig client.TxConfig, appOpts servertypes.App
 
 	burnDecorator := monoante.NewValidatorRegistrationBurnDecorator(
 		app.MonoKeeper,
+		app.BurnKeeper,
+		app.StakingKeeper,
 		evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
 		evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
 	)

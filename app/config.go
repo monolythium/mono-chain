@@ -9,6 +9,7 @@ import (
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	protocolpooltypes "github.com/cosmos/cosmos-sdk/x/protocolpool/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	corevm "github.com/ethereum/go-ethereum/core/vm"
 	evmutils "github.com/cosmos/evm/utils"
 	erc20types "github.com/cosmos/evm/x/erc20/types"
 	feemarkettypes "github.com/cosmos/evm/x/feemarket/types"
@@ -112,5 +113,17 @@ func BlockedAddresses() map[string]bool {
 			result[authtypes.NewModuleAddress(name).String()] = true
 		}
 	}
+
+	// Block precompile addresses to prevent fund loss
+	blockedPrecompiles := evmtypes.AvailableStaticPrecompiles
+	// Add native Ethereum precompile addresses (0x1-0x9 for Prague)
+	for _, addr := range corevm.PrecompiledAddressesPrague {
+		blockedPrecompiles = append(blockedPrecompiles, addr.Hex())
+	}
+	// Convert all precompile addresses to Bech32 and block them
+	for _, precompile := range blockedPrecompiles {
+		result[evmutils.Bech32StringFromHexAddress(precompile)] = true
+	}
+
 	return result
 }

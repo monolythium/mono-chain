@@ -46,6 +46,16 @@ genesis:
         evm_denom: alyth
         extended_denom_options:
           extended_denom: alyth
+        active_static_precompiles:
+          - "0x0000000000000000000000000000000000000100"
+          - "0x0000000000000000000000000000000000000800"
+          - "0x0000000000000000000000000000000000000801"
+          - "0x0000000000000000000000000000000000000802"
+          - "0x0000000000000000000000000000000000000803"
+          - "0x0000000000000000000000000000000000000804"
+          - "0x0000000000000000000000000000000000000805"
+          - "0x0000000000000000000000000000000000000806"
+          - "0x0000000000000000000000000000000000000807"
     feemarket:
       params:
         no_base_fee: false
@@ -93,53 +103,55 @@ genesis:
         unbonding_time: "1814400s"
         max_validators: 53
         bond_denom: alyth
+
 default_denom: alyth
 accounts:
-- name: alice
-  coins:
-  - 300000000000000000000000alyth
-  cointype: 60
-- name: bob
-  coins:
-  - 200000000000000000000000alyth
-  cointype: 60
-- name: validator1
-  coins:
-  - 300000000000000000000000alyth
-  cointype: 60
-- name: validator2
-  coins:
-  - 400000000000000000000000alyth
-  cointype: 60
+  - name: alice
+    coins:
+    - 300000000000000000000000alyth
+    cointype: 60
+  - name: bob
+    coins:
+    - 200000000000000000000000alyth
+    cointype: 60
+  - name: validator1
+    coins:
+    - 300000000000000000000000alyth
+    cointype: 60
+  - name: validator2
+    coins:
+    - 400000000000000000000000alyth
+    cointype: 60
 client:
   openapi:
     path: docs/static/openapi.json
 faucet:
   name: bob
   coins:
-  - 100000alyth
+    - 100000alyth
 validators:
-- name: alice
-  home: ~/.mono
-  bonded: 150000000000000000000000alyth
-  app:
-    evm:
-      evm-chain-id: "262145"
-    json-rpc:
-      enable: true
-- name: validator1
-  home: ~/.mono-val1
-  bonded: 100000000000000000000000alyth
-  app:
-    evm:
-      evm-chain-id: "262145"
-    json-rpc:
-      enable: true
-- name: validator2
-  home: ~/.mono-val2
-  bonded: 200000000000000000000000alyth
-  app:
-    evm:
-      evm-chain-id: "262145"
-    json-rpc:
-      enable: true
+  - name: alice
+    home: ~/.mono
+    bonded: 150000000000000000000000alyth
+    app:
+      evm:
+        evm-chain-id: "6940"
+        min_self_delegation: "100000000000000000000000"
+      json-rpc:
+        enable: true
+  - name: validator1
+    home: ~/.mono-val1
+    bonded: 100000000000000000000000alyth
+    app:
+      evm:
+        evm-chain-id: "6940"
+      json-rpc:
+        enable: true
+  - name: validator2
+    home: ~/.mono-val2
+    bonded: 200000000000000000000000alyth
+    app:
+      evm:
+        evm-chain-id: "6940"
+      json-rpc:
+        enable: true

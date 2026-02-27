@@ -23,4 +23,5 @@ var (
 	ErrInvalidBurnAddress        = errors.Register(ModuleName, 1205, "invalid burn address in transaction")
 	ErrDuplicateRegistrationInfo         = errors.Register(ModuleName, 1206, "validator registration limited to one per transaction")
 	ErrInsufficientMinSelfDelegation     = errors.Register(ModuleName, 1207, "minimum self-delegation below required amount")
+	ErrAlreadyValidator                  = errors.Register(ModuleName, 1208, "account is already a registered validator")
 )

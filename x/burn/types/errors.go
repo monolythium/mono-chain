@@ -14,4 +14,5 @@ var (
 	ErrPostBurnValidation = errors.Register(ModuleName, 1103, "post-burn validation failed")
 	ErrBurnFailed         = errors.Register(ModuleName, 1104, "burn operation failed")
 	ErrInvalidBurnDenom   = errors.Register(ModuleName, 1105, "invalid denomination for burn")
+	ErrInsufficientFunds  = errors.Register(ModuleName, 1106, "insufficient funds for burn")
 )

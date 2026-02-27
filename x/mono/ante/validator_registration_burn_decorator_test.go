@@ -18,6 +18,7 @@ import (
 	protov2 "google.golang.org/protobuf/proto"
 
 	"github.com/monolythium/mono-chain/app"
+	burnkeeper "github.com/monolythium/mono-chain/x/burn/keeper"
 	burnmoduletypes "github.com/monolythium/mono-chain/x/burn/types"
 	monoante "github.com/monolythium/mono-chain/x/mono/ante"
 	"github.com/monolythium/mono-chain/x/mono/keeper"
@@ -77,6 +78,8 @@ func initDepositFixture(t *testing.T, registrationFee sdk.Coin) *depositFixture 
 		keeper: k,
 		decorator: monoante.NewValidatorRegistrationBurnDecorator(
 			k,
+			burnkeeper.Keeper{}, // empty struct
+			nil, // staking keeper not used in test
 			addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
 			addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
 		),
@@ -372,6 +375,8 @@ func TestValidatorRegistrationBurn_ParamsReadFailure(t *testing.T) {
 
 	decorator := monoante.NewValidatorRegistrationBurnDecorator(
 		k,
+		burnkeeper.Keeper{}, // empty struct
+		nil, // staking keeper not used in test
 		addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
 		addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
 	)

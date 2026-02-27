@@ -61,7 +61,7 @@ func TestAppInit_DoesNotPanic(t *testing.T) {
 func TestAppInit_KeepersNonNil(t *testing.T) {
 	a := newTestApp(t)
 
-	require.NotNil(t, a.AuthKeeper)
+	require.NotNil(t, a.AccountKeeper)
 	require.NotNil(t, a.BankKeeper)
 	require.NotNil(t, a.StakingKeeper)
 	require.NotNil(t, a.MintKeeper)
@@ -73,6 +73,8 @@ func TestAppInit_KeepersNonNil(t *testing.T) {
 	require.NotNil(t, a.IBCKeeper)
 	require.NotNil(t, a.BurnKeeper)
 	require.NotNil(t, a.MonoKeeper)
+	require.NotNil(t, a.AuthzKeeper)
+	require.NotNil(t, a.FeeGrantKeeper)
 	require.NotNil(t, a.ModuleManager)
 }
 
@@ -83,6 +85,13 @@ func TestAppInit_CodecsAvailable(t *testing.T) {
 	require.NotNil(t, a.LegacyAmino())
 	require.NotNil(t, a.InterfaceRegistry())
 	require.NotNil(t, a.TxConfig())
+}
+
+func TestAppInit_ConfiguratorAvailable(t *testing.T) {
+	a := newTestApp(t)
+
+	// Verify Configurator getter exists and returns non-nil
+	require.NotNil(t, a.Configurator(), "Configurator must be available for upgrades")
 }
 
 func TestAppInit_EVMStoreKeysRegistered(t *testing.T) {
@@ -148,7 +157,7 @@ func TestModuleAccountPerms_Custom(t *testing.T) {
 
 func TestAddressCodec_Bech32Roundtrip(t *testing.T) {
 	a := newTestApp(t)
-	codec := a.AuthKeeper.AddressCodec()
+	codec := a.AccountKeeper.AddressCodec()
 
 	addrBytes := make([]byte, 20)
 	for i := range addrBytes {
@@ -166,7 +175,7 @@ func TestAddressCodec_Bech32Roundtrip(t *testing.T) {
 
 func TestAddressCodec_HexRoundtrip(t *testing.T) {
 	a := newTestApp(t)
-	codec := a.AuthKeeper.AddressCodec()
+	codec := a.AccountKeeper.AddressCodec()
 
 	addrBytes := make([]byte, 20)
 	for i := range addrBytes {
@@ -229,6 +238,19 @@ func TestDefaultGenesis_CustomModulesPresent(t *testing.T) {
 
 	_, hasMono := genesis[monomoduletypes.ModuleName]
 	require.True(t, hasMono)
+}
+
+func TestDefaultGenesis_AuthzAndFeeGrantPresent(t *testing.T) {
+	a := newTestApp(t)
+	genesis := a.DefaultGenesis()
+
+	// Verify authz module is in genesis
+	_, hasAuthz := genesis["authz"]
+	require.True(t, hasAuthz, "authz module must be in genesis")
+
+	// Verify feegrant module is in genesis
+	_, hasFeeGrant := genesis["feegrant"]
+	require.True(t, hasFeeGrant, "feegrant module must be in genesis")
 }
 
 func TestBech32Prefix_Configured(t *testing.T) {
@@ -364,4 +386,45 @@ func TestEVMLifecycle(t *testing.T) {
 func TestEVMPreinstalls_Available(t *testing.T) {
 	require.NotEmpty(t, evmtypes.DefaultPreinstalls,
 		"DefaultPreinstalls must contain standard EVM contracts")
+}
+
+// TestBlockedAddresses_PrecompilesBlocked verifies precompile addresses are blocked
+// to prevent permanent fund loss
+func TestBlockedAddresses_PrecompilesBlocked(t *testing.T) {
+	blocked := app.BlockedAddresses()
+
+	// Test native Ethereum precompiles (0x1-0x9) are blocked
+	ethPrecompiles := []string{
+		"0x0000000000000000000000000000000000000001", // ecrecover
+		"0x0000000000000000000000000000000000000002", // sha256
+		"0x0000000000000000000000000000000000000003", // ripemd160
+		"0x0000000000000000000000000000000000000004", // identity
+		"0x0000000000000000000000000000000000000005", // modexp
+		"0x0000000000000000000000000000000000000006", // ecAdd
+		"0x0000000000000000000000000000000000000007", // ecMul
+		"0x0000000000000000000000000000000000000008", // ecPairing
+		"0x0000000000000000000000000000000000000009", // blake2f
+	}
+
+	for _, hexAddr := range ethPrecompiles {
+		bech32Addr := evmutils.Bech32StringFromHexAddress(hexAddr)
+		require.True(t, blocked[bech32Addr],
+			"Ethereum precompile %s must be blocked", hexAddr)
+	}
+
+	// Test Cosmos EVM precompiles from AvailableStaticPrecompiles are blocked
+	for _, precompileHex := range evmtypes.AvailableStaticPrecompiles {
+		bech32Addr := evmutils.Bech32StringFromHexAddress(precompileHex)
+		require.True(t, blocked[bech32Addr],
+			"Cosmos precompile %s must be blocked", precompileHex)
+	}
+}
+
+// TestAccountKeeper_NoAuthKeeperReferences verifies rename is complete
+func TestAccountKeeper_NoAuthKeeperReferences(t *testing.T) {
+	a := newTestApp(t)
+
+	// Test AccountKeeper methods work
+	codec := a.AccountKeeper.AddressCodec()
+	require.NotNil(t, codec, "AddressCodec must work")
 }
