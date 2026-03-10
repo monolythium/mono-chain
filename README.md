@@ -1,3 +1,5 @@
+![Mono Chain](https://raw.githubusercontent.com/mono-labs-org/.github/prod/media/github-banners/monolythium/mono-chain.png)
+
 # Monolythium
 
 **Monolythium** is a blockchain built using Cosmos SDK and Tendermint.
