@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"os"
 
 	"github.com/spf13/cast"
@@ -92,6 +93,7 @@ import (
 	evmencoding "github.com/cosmos/evm/encoding"
 	evmaddress "github.com/cosmos/evm/encoding/address"
 	evmmempool "github.com/cosmos/evm/mempool"
+	stakingprecompile "github.com/cosmos/evm/precompiles/staking"
 	precompiletypes "github.com/cosmos/evm/precompiles/types"
 	cosmosevmserver "github.com/cosmos/evm/server"
 	srvflags "github.com/cosmos/evm/server/flags"
@@ -131,9 +133,14 @@ import (
 	burnmodulekeeper "github.com/monolythium/mono-chain/x/burn/keeper"
 	burnmodule "github.com/monolythium/mono-chain/x/burn/module"
 	burnmoduletypes "github.com/monolythium/mono-chain/x/burn/types"
+	monoante "github.com/monolythium/mono-chain/x/mono/ante"
 	monomodulekeeper "github.com/monolythium/mono-chain/x/mono/keeper"
 	monomodule "github.com/monolythium/mono-chain/x/mono/module"
 	monomoduletypes "github.com/monolythium/mono-chain/x/mono/types"
+
+	// Simulation imports
+	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
+	"github.com/cosmos/cosmos-sdk/x/simulation"
 )
 
 var (
@@ -345,7 +352,6 @@ func New(
 		authAddr,
 	)
 
-	// TODO: determine if valid and order placement
 	app.ProtocolPoolKeeper = protocolpoolkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[protocolpooltypes.StoreKey]),
@@ -387,6 +393,10 @@ func New(
 		app.BankKeeper,
 	)
 
+	// Create the mono staking MsgServer
+	// shared by keeper (unwrapped) and precompile (wrapped)
+	monoStakingMsgServer := stakingkeeper.NewMsgServerImpl(app.StakingKeeper)
+
 	app.MonoKeeper = monomodulekeeper.NewKeeper(
 		runtime.NewKVStoreService(keys[monomoduletypes.StoreKey]),
 		appCodec,
@@ -395,6 +405,9 @@ func New(
 		app.BankKeeper,
 		app.StakingKeeper,
 		app.DistrKeeper,
+		monoStakingMsgServer,
+		burnmodulekeeper.NewMsgServerImpl(app.BurnKeeper),
+		evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
 	)
 
 	// Staking hooks for distribution + slashing
@@ -475,8 +488,27 @@ func New(
 		tkeys[feemarkettypes.TransientKey],
 	)
 
-	// EVMKeeper (needs FeeMarket, pointers to Erc20)
-	tracer := cast.ToString(appOpts.Get(srvflags.EVMTracer))
+	// EVMKeeper
+	precompiles := precompiletypes.NewStaticPrecompiles().
+		WithPraguePrecompiles().
+		WithP256Precompile().
+		WithBech32Precompile().
+		WithDistributionPrecompile(app.DistrKeeper, *app.StakingKeeper, app.BankKeeper).
+		WithICS20Precompile(app.BankKeeper, *app.StakingKeeper, &app.TransferKeeper, app.IBCKeeper.ChannelKeeper, &app.Erc20Keeper).
+		WithBankPrecompile(app.BankKeeper, &app.Erc20Keeper).
+		WithGovPrecompile(app.GovKeeper, app.BankKeeper, appCodec).
+		WithSlashingPrecompile(app.SlashingKeeper, app.BankKeeper)
+
+	// Staking precompile with injected MsgServer to block MsgCreateValidator
+	wrappedStakingPrecompile := stakingprecompile.NewPrecompile(
+		*app.StakingKeeper,
+		monoante.NewRestrictedStakingMsgServer(monoStakingMsgServer),
+		stakingkeeper.NewQuerier(app.StakingKeeper),
+		app.BankKeeper,
+		evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
+	)
+	precompiles[wrappedStakingPrecompile.Address()] = wrappedStakingPrecompile
+
 	app.EVMKeeper = evmkeeper.NewKeeper(
 		appCodec,
 		keys[evmtypes.StoreKey],
@@ -490,20 +522,8 @@ func New(
 		&app.ConsensusParamsKeeper,
 		&app.Erc20Keeper, // pointer to struct field — resolved after Erc20Keeper is set
 		evmChainID,
-		tracer,
-	).WithStaticPrecompiles(
-		precompiletypes.DefaultStaticPrecompiles(
-			*app.StakingKeeper,
-			app.DistrKeeper,
-			app.BankKeeper,
-			&app.Erc20Keeper,
-			&app.TransferKeeper,
-			app.IBCKeeper.ChannelKeeper,
-			app.GovKeeper,
-			app.SlashingKeeper,
-			appCodec,
-		),
-	)
+		cast.ToString(appOpts.Get(srvflags.EVMTracer)), // tracer,
+	).WithStaticPrecompiles(precompiles)
 
 	// Erc20Keeper (needs EVMKeeper, pointer to Transfer)
 	app.Erc20Keeper = erc20keeper.NewKeeper(
@@ -733,6 +753,9 @@ func New(
 		panic(fmt.Sprintf("failed to register services in module manager: %s", err.Error()))
 	}
 
+	// Rejects bare MsgCreateValidator
+	app.SetCircuitBreaker(monoante.NewStakingCircuitBreaker())
+
 	// TODO: Implement RegisterUpgradeHandlers when needed for chain upgrades
 	// app.RegisterUpgradeHandlers()
 
@@ -744,7 +767,12 @@ func New(
 	}
 	reflectionv1.RegisterReflectionServiceServer(app.GRPCQueryRouter(), reflectionSvc)
 
-	app.sm = module.NewSimulationManagerFromAppModules(app.ModuleManager.Modules, make(map[string]module.AppModuleSimulation))
+	// Simulation: wrap staking module with mono handlers
+	stakingMod := app.ModuleManager.Modules[stakingtypes.ModuleName].(module.AppModuleSimulation)
+	app.sm = module.NewSimulationManagerFromAppModules(app.ModuleManager.Modules, map[string]module.AppModuleSimulation{
+		stakingtypes.ModuleName: stakingSimWrap{stakingMod},
+	})
+
 	app.sm.RegisterStoreDecoders()
 
 	// Mount stores
@@ -792,7 +820,7 @@ func New(
 	}
 	err = msgservice.ValidateProtoAnnotations(protoFiles)
 	if err != nil {
-		// TODO: Once we switch to using protoreflect-based antehandlers, we might
+		// TODO: (COSMOS) - Once we switch to using protoreflect-based antehandlers, we might
 		// want to panic here instead of logging a warning.
 		fmt.Fprintln(os.Stderr, err.Error())
 	}
@@ -928,6 +956,36 @@ func (app *App) GetStoreKeys() []storetypes.StoreKey {
 // SimulationManager implements the SimulationApp interface
 func (app *App) SimulationManager() *module.SimulationManager {
 	return app.sm
+}
+
+// stakingSimWrap suppresses MsgCreateValidator errors during sim.
+// The circuit breaker otherwise rejects these, aborting the sim run.
+type stakingSimWrap struct {
+	module.AppModuleSimulation
+}
+
+func (s stakingSimWrap) WeightedOperations(simState module.SimulationState) []simtypes.WeightedOperation {
+	ops := s.AppModuleSimulation.WeightedOperations(simState)
+	for i, op := range ops {
+		orig := op
+		ops[i] = simulation.NewWeightedOperation(
+			orig.Weight(),
+			func(r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string) (
+				simtypes.OperationMsg,
+				[]simtypes.FutureOperation,
+				error,
+			) {
+				msg, fOps, err := orig.Op()(r, app, ctx, accs, chainID)
+				if err != nil {
+					if msg.Name == sdk.MsgTypeURL(&stakingtypes.MsgCreateValidator{}) {
+						return simtypes.NoOpMsg(msg.Route, msg.Name, msg.Comment), nil, nil
+					}
+					return msg, fOps, err
+				}
+				return msg, fOps, nil
+			})
+	}
+	return ops
 }
 
 // AutoCliOpts returns options for the AutoCLI module with EVM address codecs.

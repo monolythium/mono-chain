@@ -63,7 +63,7 @@ genesis:
         elasticity_multiplier: 2
         enable_height: "1"
         base_fee: "1000000000"
-        min_gas_price: "0.001"
+        min_gas_price: "10000000"
         min_gas_multiplier: "0.5"
     gov:
       params:
@@ -87,7 +87,10 @@ genesis:
     mono:
       params:
         fee_burn_percent: "0.9"
-        validator_registration_fee:
+        validator_registration_burn:
+          denom: alyth
+          amount: "100000000000000000000000"
+        validator_min_self_delegation:
           denom: alyth
           amount: "100000000000000000000000"
     protocolpool:
@@ -112,7 +115,7 @@ accounts:
     cointype: 60
   - name: bob
     coins:
-    - 200000000000000000000000alyth
+    - 250000000000000000000000alyth
     cointype: 60
   - name: validator1
     coins:
@@ -133,6 +136,8 @@ validators:
   - name: alice
     home: ~/.mono
     bonded: 150000000000000000000000alyth
+    gentx:
+      gas-prices: "10000000alyth"
     app:
       evm:
         evm-chain-id: "6940"
@@ -142,6 +147,8 @@ validators:
   - name: validator1
     home: ~/.mono-val1
     bonded: 100000000000000000000000alyth
+    gentx:
+      gas-prices: "10000000alyth"
     app:
       evm:
         evm-chain-id: "6940"
@@ -150,6 +157,8 @@ validators:
   - name: validator2
     home: ~/.mono-val2
     bonded: 200000000000000000000000alyth
+    gentx:
+      gas-prices: "10000000alyth"
     app:
       evm:
         evm-chain-id: "6940"

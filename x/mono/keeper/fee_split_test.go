@@ -16,6 +16,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
 
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
@@ -172,6 +173,9 @@ func initFeeSplitFixture(t *testing.T, mockBank *feeSplitMockBank, mockStaking *
 		mockBank,
 		mockStaking,
 		mockStaking,
+		nil, // stakingMsgServer
+		nil, // burnMsgServer
+		nil, // validatorAddressCodec
 	)
 
 	return &feeSplitFixture{
@@ -184,10 +188,10 @@ func initFeeSplitFixture(t *testing.T, mockBank *feeSplitMockBank, mockStaking *
 }
 
 // setParams sets params on the keeper and fatals on error
-func (f *feeSplitFixture) setParams(t *testing.T, feeBurnPercent math.LegacyDec, regFee sdk.Coin) {
+func (f *feeSplitFixture) setParams(t *testing.T, feeBurnPercent math.LegacyDec, regBurn sdk.Coin, minSelfDel sdk.Coin) {
 	t.Helper()
-	err := f.keeper.Params.Set(f.ctx, types.NewParams(feeBurnPercent, regFee))
-	require.NoError(t, err)
+	err := f.keeper.Params.Set(f.ctx, types.NewParams(feeBurnPercent, regBurn, minSelfDel))
+	assert.NilError(t, err)
 }
 
 // setFeeCollectorBalance sets the mock balance for the fee_collector address
@@ -212,7 +216,7 @@ func TestProcessFeeSplit_EmptyFeeCollector(t *testing.T) {
 	mockBank := newFeeSplitMockBank()
 	mockStaking := newFeeSplitMockStaking()
 	f := initFeeSplitFixture(t, mockBank, mockStaking)
-	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
+	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
 
 	// Fee collector has no balance
 	err := f.keeper.ProcessFeeSplit(f.ctx)
@@ -227,7 +231,7 @@ func TestProcessFeeSplit_NormalSplit(t *testing.T) {
 	mockBank := newFeeSplitMockBank()
 	mockStaking := newFeeSplitMockStaking()
 	f := initFeeSplitFixture(t, mockBank, mockStaking)
-	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
+	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
 
 	// Setup fee collector with 1000 alyth
 	f.setFeeCollectorBalance(sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(1000))))
@@ -266,7 +270,7 @@ func TestProcessFeeSplit_UsesDelegatorWithdrawAddress(t *testing.T) {
 	mockStaking := newFeeSplitMockStaking()
 	mockStaking.withdrawAddr = sdk.AccAddress("custom_withdraw_addr_1")
 	f := initFeeSplitFixture(t, mockBank, mockStaking)
-	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
+	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
 
 	f.setFeeCollectorBalance(sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(1000))))
 
@@ -291,7 +295,7 @@ func TestProcessFeeSplit_WithdrawAddrLookupFails(t *testing.T) {
 	mockStaking := newFeeSplitMockStaking()
 	mockStaking.withdrawAddrErr = errors.New("mock: withdraw address lookup failed")
 	f := initFeeSplitFixture(t, mockBank, mockStaking)
-	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
+	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
 
 	f.setFeeCollectorBalance(sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(1000))))
 
@@ -315,7 +319,7 @@ func TestProcessFeeSplit_FullBurn(t *testing.T) {
 	mockBank := newFeeSplitMockBank()
 	mockStaking := newFeeSplitMockStaking()
 	f := initFeeSplitFixture(t, mockBank, mockStaking)
-	f.setParams(t, math.LegacyOneDec(), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt())) // 100% burn
+	f.setParams(t, math.LegacyOneDec(), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt())) // 100% burn
 
 	f.setFeeCollectorBalance(sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(500))))
 
@@ -342,7 +346,7 @@ func TestProcessFeeSplit_ZeroBurn(t *testing.T) {
 	mockBank := newFeeSplitMockBank()
 	mockStaking := newFeeSplitMockStaking()
 	f := initFeeSplitFixture(t, mockBank, mockStaking)
-	f.setParams(t, math.LegacyZeroDec(), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt())) // 0% burn
+	f.setParams(t, math.LegacyZeroDec(), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt())) // 0% burn
 
 	f.setFeeCollectorBalance(sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(500))))
 
@@ -370,7 +374,7 @@ func TestProcessFeeSplit_NoProposerAddress(t *testing.T) {
 	mockBank := newFeeSplitMockBank()
 	mockStaking := newFeeSplitMockStaking()
 	f := initFeeSplitFixture(t, mockBank, mockStaking)
-	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
+	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
 
 	f.setFeeCollectorBalance(sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(1000))))
 
@@ -398,7 +402,7 @@ func TestProcessFeeSplit_ProposerLookupFails(t *testing.T) {
 	mockStaking := newFeeSplitMockStaking()
 	mockStaking.failLookup = true
 	f := initFeeSplitFixture(t, mockBank, mockStaking)
-	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
+	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
 
 	f.setFeeCollectorBalance(sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(1000))))
 
@@ -422,7 +426,7 @@ func TestProcessFeeSplit_NilValidator(t *testing.T) {
 	mockStaking := newFeeSplitMockStaking()
 	mockStaking.returnNil = true
 	f := initFeeSplitFixture(t, mockBank, mockStaking)
-	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
+	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
 
 	f.setFeeCollectorBalance(sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(200))))
 
@@ -444,7 +448,7 @@ func TestProcessFeeSplit_BurnTransferFails(t *testing.T) {
 	mockBank.failSendModToModOnCall = 1 // fail on first SendModToMod (main burn transfer)
 	mockStaking := newFeeSplitMockStaking()
 	f := initFeeSplitFixture(t, mockBank, mockStaking)
-	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
+	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
 
 	f.setFeeCollectorBalance(sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(1000))))
 
@@ -472,7 +476,7 @@ func TestProcessFeeSplit_BurnCoinsFails(t *testing.T) {
 	mockBank.failBurnCoinsOnCall = 1 // fail on first BurnCoins (after successful transfer)
 	mockStaking := newFeeSplitMockStaking()
 	f := initFeeSplitFixture(t, mockBank, mockStaking)
-	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
+	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
 
 	f.setFeeCollectorBalance(sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(1000))))
 
@@ -501,7 +505,7 @@ func TestProcessFeeSplit_ProposerSendFails(t *testing.T) {
 	mockBank.failSendModToAcc = true
 	mockStaking := newFeeSplitMockStaking()
 	f := initFeeSplitFixture(t, mockBank, mockStaking)
-	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
+	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
 
 	f.setFeeCollectorBalance(sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(1000))))
 
@@ -527,7 +531,7 @@ func TestProcessFeeSplit_MultiDenom(t *testing.T) {
 	mockBank := newFeeSplitMockBank()
 	mockStaking := newFeeSplitMockStaking()
 	f := initFeeSplitFixture(t, mockBank, mockStaking)
-	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
+	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
 
 	// Fee collector has two denoms
 	f.setFeeCollectorBalance(sdk.NewCoins(
@@ -561,7 +565,7 @@ func TestProcessFeeSplit_PreserveIBCAssets(t *testing.T) {
 	mockBank := newFeeSplitMockBank()
 	mockStaking := newFeeSplitMockStaking()
 	f := initFeeSplitFixture(t, mockBank, mockStaking)
-	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
+	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
 
 	// Fee collector has native and non-native (IBC) assets
 	nativeCoin := sdk.NewCoin(app.DefaultBondDenom, math.NewInt(1000))
@@ -595,7 +599,7 @@ func TestProcessFeeSplit_RoundingDust(t *testing.T) {
 	mockBank := newFeeSplitMockBank()
 	mockStaking := newFeeSplitMockStaking()
 	f := initFeeSplitFixture(t, mockBank, mockStaking)
-	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
+	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
 
 	// 99 * 0.90 = 89.1 => truncated to 89
 	// proposer gets 99 - 89 = 10 (not 9.9)
@@ -626,7 +630,7 @@ func TestProcessFeeSplit_SingleUnit(t *testing.T) {
 	mockBank := newFeeSplitMockBank()
 	mockStaking := newFeeSplitMockStaking()
 	f := initFeeSplitFixture(t, mockBank, mockStaking)
-	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
+	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
 
 	// 1 * 0.90 = 0.9 => truncated to 0
 	// proposer gets 1 - 0 = 1 (all of it)
@@ -659,7 +663,7 @@ func TestProcessFeeSplit_FallbackBurnTransferFails(t *testing.T) {
 	mockStaking := newFeeSplitMockStaking()
 	mockStaking.failLookup = true // force proposer resolution failure => fallback path
 	f := initFeeSplitFixture(t, mockBank, mockStaking)
-	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
+	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
 
 	f.setFeeCollectorBalance(sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(1000))))
 
@@ -687,7 +691,7 @@ func TestProcessFeeSplit_FallbackBurnCoinsFails(t *testing.T) {
 	mockStaking := newFeeSplitMockStaking()
 	mockStaking.failLookup = true // force fallback path
 	f := initFeeSplitFixture(t, mockBank, mockStaking)
-	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
+	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
 
 	f.setFeeCollectorBalance(sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(1000))))
 
@@ -709,7 +713,7 @@ func TestProcessFeeSplit_MalformedValidatorOperatorAddress(t *testing.T) {
 	mockBank := newFeeSplitMockBank()
 	mockStaking := newFeeSplitMockStaking()
 	f := initFeeSplitFixture(t, mockBank, mockStaking)
-	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
+	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
 
 	f.setFeeCollectorBalance(sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(1000))))
 
@@ -748,7 +752,7 @@ func TestProcessFeeSplit_ProductionScaleAmounts(t *testing.T) {
 	mockBank := newFeeSplitMockBank()
 	mockStaking := newFeeSplitMockStaking()
 	f := initFeeSplitFixture(t, mockBank, mockStaking)
-	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
+	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
 
 	// 100 LYTH = 100_000_000_000_000_000_000 alyth (1e20)
 	feeAmount := math.NewIntWithDecimal(100, 18)
@@ -781,7 +785,7 @@ func TestProcessFeeSplit_ProductionScaleRoundingDust(t *testing.T) {
 	mockBank := newFeeSplitMockBank()
 	mockStaking := newFeeSplitMockStaking()
 	f := initFeeSplitFixture(t, mockBank, mockStaking)
-	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
+	f.setParams(t, math.LegacyNewDecWithPrec(90, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
 
 	// 1 LYTH + 1 alyth = 1_000_000_000_000_000_001
 	// burn = 1_000_000_000_000_000_001 * 0.90 = 900_000_000_000_000_000.9 => truncated to 900_000_000_000_000_000
@@ -816,7 +820,7 @@ func TestProcessFeeSplit_HighPrecisionPercent(t *testing.T) {
 	f := initFeeSplitFixture(t, mockBank, mockStaking)
 
 	// 33.333...% burn. tests non-trivial decimal precision
-	f.setParams(t, math.LegacyNewDecWithPrec(33, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
+	f.setParams(t, math.LegacyNewDecWithPrec(33, 2), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()), sdk.NewCoin(app.DefaultBondDenom, math.ZeroInt()))
 
 	f.setFeeCollectorBalance(sdk.NewCoins(sdk.NewCoin(app.DefaultBondDenom, math.NewInt(100))))
 

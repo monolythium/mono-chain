@@ -3,6 +3,8 @@ package mono
 import (
 	"math/rand"
 
+	"cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
@@ -17,8 +19,13 @@ func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
 	for i, acc := range simState.Accounts {
 		accs[i] = acc.Address.String()
 	}
+
 	monoGenesis := types.GenesisState{
-		Params: types.DefaultParams(),
+		Params: types.NewParams(
+			math.LegacyNewDecWithPrec(50, 2),
+			sdk.NewCoin(sdk.DefaultBondDenom, math.NewIntWithDecimal(100_000, 18)),
+			sdk.NewCoin(sdk.DefaultBondDenom, math.NewIntWithDecimal(100_000, 18)),
+		),
 	}
 	simState.GenState[types.ModuleName] = simState.Cdc.MustMarshalJSON(&monoGenesis)
 }
@@ -31,8 +38,8 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	operations := make([]simtypes.WeightedOperation, 0)
 
 	const (
-		opWeightValRegistration          = "op_weight_validator_registration"
-		defaultWeightValRegistration int = 10
+		opWeightValRegistration      = "op_weight_validator_registration"
+		defaultWeightValRegistration = 10
 	)
 
 	var weightValRegistration int

@@ -7,13 +7,14 @@ import (
 
 	"cosmossdk.io/core/address"
 	storetypes "cosmossdk.io/store/types"
-	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	evmaddress "github.com/cosmos/evm/encoding/address"
 	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
 
 	"github.com/monolythium/mono-chain/app"
 	"github.com/monolythium/mono-chain/x/mono/keeper"
@@ -22,9 +23,11 @@ import (
 )
 
 type fixture struct {
-	ctx          context.Context
-	keeper       keeper.Keeper
-	addressCodec address.Codec
+	ctx               context.Context
+	keeper            keeper.Keeper
+	addressCodec      address.Codec
+	mockStakingServer *mockStakingMsgServer
+	mockBurnServer    *mockBurnMsgServer
 }
 
 func initFixture(t *testing.T) *fixture {
@@ -32,13 +35,16 @@ func initFixture(t *testing.T) *fixture {
 
 	encCfg := moduletestutil.MakeTestEncodingConfig(module.AppModule{})
 	require.Equal(t, "mono", sdk.GetConfig().GetBech32AccountAddrPrefix())
-	addressCodec := addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix())
+	addressCodec := evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32AccountAddrPrefix())
 	storeKey := storetypes.NewKVStoreKey(types.StoreKey)
 
 	storeService := runtime.NewKVStoreService(storeKey)
 	ctx := testutil.DefaultContextWithDB(t, storeKey, storetypes.NewTransientStoreKey("transient_test")).Ctx
 
 	authority := authtypes.NewModuleAddress(types.GovModuleName)
+	mockStaking := &mockStakingMsgServer{}
+	mockBurn := &mockBurnMsgServer{}
+	valAddrCodec := evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32ValidatorAddrPrefix())
 
 	k := keeper.NewKeeper(
 		storeService,
@@ -48,17 +54,22 @@ func initFixture(t *testing.T) *fixture {
 		nil,
 		nil,
 		nil,
+		mockStaking,
+		mockBurn,
+		valAddrCodec,
 	)
 
 	// Initialize params
 	if err := k.Params.Set(ctx, types.DefaultParams()); err != nil {
-		t.Fatalf("failed to set params: %v", err)
+		assert.NilError(t, err)
 	}
 
 	return &fixture{
-		ctx:          ctx,
-		keeper:       k,
-		addressCodec: addressCodec,
+		ctx:               ctx,
+		keeper:            k,
+		addressCodec:      addressCodec,
+		mockStakingServer: mockStaking,
+		mockBurnServer:    mockBurn,
 	}
 }
 

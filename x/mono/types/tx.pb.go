@@ -7,8 +7,10 @@ import (
 	context "context"
 	fmt "fmt"
 	_ "github.com/cosmos/cosmos-proto"
+	types1 "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/cosmos/cosmos-sdk/types/msgservice"
 	_ "github.com/cosmos/cosmos-sdk/types/tx/amino"
+	types "github.com/cosmos/cosmos-sdk/x/staking/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
 	proto "github.com/cosmos/gogoproto/proto"
@@ -31,6 +33,102 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+type MsgRegisterValidator struct {
+	Sender          string                   `protobuf:"bytes,1,opt,name=sender,proto3" json:"sender,omitempty"`
+	CreateValidator types.MsgCreateValidator `protobuf:"bytes,2,opt,name=create_validator,json=createValidator,proto3" json:"create_validator"`
+	Burn            types1.Coin              `protobuf:"bytes,3,opt,name=burn,proto3" json:"burn"`
+}
+
+func (m *MsgRegisterValidator) Reset()         { *m = MsgRegisterValidator{} }
+func (m *MsgRegisterValidator) String() string { return proto.CompactTextString(m) }
+func (*MsgRegisterValidator) ProtoMessage()    {}
+func (*MsgRegisterValidator) Descriptor() ([]byte, []int) {
+	return fileDescriptor_840829f798f0bd1e, []int{0}
+}
+func (m *MsgRegisterValidator) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgRegisterValidator) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgRegisterValidator.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgRegisterValidator) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgRegisterValidator.Merge(m, src)
+}
+func (m *MsgRegisterValidator) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgRegisterValidator) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgRegisterValidator.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgRegisterValidator proto.InternalMessageInfo
+
+func (m *MsgRegisterValidator) GetSender() string {
+	if m != nil {
+		return m.Sender
+	}
+	return ""
+}
+
+func (m *MsgRegisterValidator) GetCreateValidator() types.MsgCreateValidator {
+	if m != nil {
+		return m.CreateValidator
+	}
+	return types.MsgCreateValidator{}
+}
+
+func (m *MsgRegisterValidator) GetBurn() types1.Coin {
+	if m != nil {
+		return m.Burn
+	}
+	return types1.Coin{}
+}
+
+type MsgRegisterValidatorResponse struct {
+}
+
+func (m *MsgRegisterValidatorResponse) Reset()         { *m = MsgRegisterValidatorResponse{} }
+func (m *MsgRegisterValidatorResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgRegisterValidatorResponse) ProtoMessage()    {}
+func (*MsgRegisterValidatorResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_840829f798f0bd1e, []int{1}
+}
+func (m *MsgRegisterValidatorResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgRegisterValidatorResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgRegisterValidatorResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgRegisterValidatorResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgRegisterValidatorResponse.Merge(m, src)
+}
+func (m *MsgRegisterValidatorResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgRegisterValidatorResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgRegisterValidatorResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgRegisterValidatorResponse proto.InternalMessageInfo
+
 // MsgUpdateParams is the Msg/UpdateParams request type.
 type MsgUpdateParams struct {
 	// authority is the address that controls the module (defaults to x/gov unless overwritten).
@@ -45,7 +143,7 @@ func (m *MsgUpdateParams) Reset()         { *m = MsgUpdateParams{} }
 func (m *MsgUpdateParams) String() string { return proto.CompactTextString(m) }
 func (*MsgUpdateParams) ProtoMessage()    {}
 func (*MsgUpdateParams) Descriptor() ([]byte, []int) {
-	return fileDescriptor_840829f798f0bd1e, []int{0}
+	return fileDescriptor_840829f798f0bd1e, []int{2}
 }
 func (m *MsgUpdateParams) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -97,7 +195,7 @@ func (m *MsgUpdateParamsResponse) Reset()         { *m = MsgUpdateParamsResponse
 func (m *MsgUpdateParamsResponse) String() string { return proto.CompactTextString(m) }
 func (*MsgUpdateParamsResponse) ProtoMessage()    {}
 func (*MsgUpdateParamsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_840829f798f0bd1e, []int{1}
+	return fileDescriptor_840829f798f0bd1e, []int{3}
 }
 func (m *MsgUpdateParamsResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -127,6 +225,8 @@ func (m *MsgUpdateParamsResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MsgUpdateParamsResponse proto.InternalMessageInfo
 
 func init() {
+	proto.RegisterType((*MsgRegisterValidator)(nil), "monochain.mono.v1.MsgRegisterValidator")
+	proto.RegisterType((*MsgRegisterValidatorResponse)(nil), "monochain.mono.v1.MsgRegisterValidatorResponse")
 	proto.RegisterType((*MsgUpdateParams)(nil), "monochain.mono.v1.MsgUpdateParams")
 	proto.RegisterType((*MsgUpdateParamsResponse)(nil), "monochain.mono.v1.MsgUpdateParamsResponse")
 }
@@ -134,29 +234,40 @@ func init() {
 func init() { proto.RegisterFile("monochain/mono/v1/tx.proto", fileDescriptor_840829f798f0bd1e) }
 
 var fileDescriptor_840829f798f0bd1e = []byte{
-	// 346 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0xca, 0xcd, 0xcf, 0xcb,
-	0x4f, 0xce, 0x48, 0xcc, 0xcc, 0xd3, 0x07, 0xb1, 0xf4, 0xcb, 0x0c, 0xf5, 0x4b, 0x2a, 0xf4, 0x0a,
-	0x8a, 0xf2, 0x4b, 0xf2, 0x85, 0x04, 0xe1, 0x72, 0x7a, 0x20, 0x96, 0x5e, 0x99, 0xa1, 0x94, 0x60,
-	0x62, 0x6e, 0x66, 0x5e, 0xbe, 0x3e, 0x98, 0x84, 0xa8, 0x92, 0x12, 0x4f, 0xce, 0x2f, 0xce, 0xcd,
-	0x2f, 0xd6, 0xcf, 0x2d, 0x4e, 0x07, 0xe9, 0xce, 0x2d, 0x4e, 0x87, 0x4a, 0x48, 0x42, 0x24, 0xe2,
-	0xc1, 0x3c, 0x7d, 0x08, 0x07, 0x2a, 0x25, 0x92, 0x9e, 0x9f, 0x9e, 0x0f, 0x11, 0x07, 0xb1, 0xa0,
-	0xa2, 0x72, 0x98, 0x6e, 0x29, 0x48, 0x2c, 0x4a, 0xcc, 0x85, 0xea, 0x52, 0xda, 0xc3, 0xc8, 0xc5,
-	0xef, 0x5b, 0x9c, 0x1e, 0x5a, 0x90, 0x92, 0x58, 0x92, 0x1a, 0x00, 0x96, 0x11, 0x32, 0xe3, 0xe2,
-	0x4c, 0x2c, 0x2d, 0xc9, 0xc8, 0x2f, 0xca, 0x2c, 0xa9, 0x94, 0x60, 0x54, 0x60, 0xd4, 0xe0, 0x74,
-	0x92, 0xb8, 0xb4, 0x45, 0x57, 0x04, 0x6a, 0x9d, 0x63, 0x4a, 0x4a, 0x51, 0x6a, 0x71, 0x71, 0x70,
-	0x49, 0x51, 0x66, 0x5e, 0x7a, 0x10, 0x42, 0xa9, 0x90, 0x0d, 0x17, 0x1b, 0xc4, 0x6c, 0x09, 0x26,
-	0x05, 0x46, 0x0d, 0x6e, 0x23, 0x49, 0x3d, 0x0c, 0xcf, 0xea, 0x41, 0xac, 0x70, 0xe2, 0x3c, 0x71,
-	0x4f, 0x9e, 0x61, 0xc5, 0xf3, 0x0d, 0x5a, 0x8c, 0x41, 0x50, 0x3d, 0x56, 0xc6, 0x4d, 0xcf, 0x37,
-	0x68, 0x21, 0x4c, 0xeb, 0x7a, 0xbe, 0x41, 0x4b, 0x01, 0xe1, 0xf8, 0x0a, 0x88, 0xf3, 0xd1, 0x9c,
-	0xaa, 0x24, 0xc9, 0x25, 0x8e, 0x26, 0x14, 0x94, 0x5a, 0x5c, 0x90, 0x9f, 0x57, 0x9c, 0x6a, 0x94,
-	0xc3, 0xc5, 0xec, 0x5b, 0x9c, 0x2e, 0x14, 0xc7, 0xc5, 0x83, 0xe2, 0x39, 0x25, 0x2c, 0x8e, 0x42,
-	0x33, 0x42, 0x4a, 0x8b, 0xb0, 0x1a, 0x98, 0x35, 0x52, 0xac, 0x0d, 0x20, 0x5f, 0x38, 0x79, 0x9c,
-	0x78, 0x24, 0xc7, 0x78, 0xe1, 0x91, 0x1c, 0xe3, 0x83, 0x47, 0x72, 0x8c, 0x13, 0x1e, 0xcb, 0x31,
-	0x5c, 0x78, 0x2c, 0xc7, 0x70, 0xe3, 0xb1, 0x1c, 0x43, 0x94, 0x5e, 0x7a, 0x66, 0x49, 0x46, 0x69,
-	0x92, 0x5e, 0x72, 0x7e, 0x2e, 0xd8, 0x0f, 0x39, 0x95, 0x25, 0x19, 0x99, 0xa5, 0x10, 0xb6, 0x2e,
-	0x8a, 0xe7, 0x4a, 0x2a, 0x0b, 0x52, 0x8b, 0x93, 0xd8, 0xc0, 0x11, 0x63, 0x0c, 0x08, 0x00, 0x00,
-	0xff, 0xff, 0x60, 0x1f, 0xc0, 0xb0, 0x46, 0x02, 0x00, 0x00,
+	// 513 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x53, 0xbf, 0x6a, 0x1b, 0x31,
+	0x1c, 0xb6, 0x9a, 0x34, 0x60, 0xa5, 0x90, 0xfa, 0x30, 0xc4, 0x3e, 0xca, 0xc5, 0xdc, 0xd2, 0x70,
+	0x10, 0xa9, 0x8e, 0xa1, 0x43, 0xe8, 0x52, 0x67, 0xe9, 0x62, 0x28, 0x57, 0xda, 0xa1, 0x85, 0x06,
+	0xdd, 0x9d, 0x90, 0x45, 0x73, 0xd2, 0x21, 0xc9, 0x26, 0xde, 0x4a, 0xc7, 0x4e, 0x7d, 0x8c, 0x8e,
+	0x1e, 0x3a, 0xf6, 0x01, 0x32, 0x86, 0x4e, 0x85, 0x42, 0x29, 0xf6, 0xe0, 0xd7, 0x28, 0x77, 0xa7,
+	0xb3, 0xeb, 0xd8, 0x90, 0x2e, 0xe6, 0x27, 0x7d, 0x7f, 0xf4, 0xe9, 0x93, 0x0f, 0xba, 0xa9, 0x14,
+	0x32, 0x1e, 0x12, 0x2e, 0x70, 0x3e, 0xe1, 0x71, 0x17, 0x9b, 0x2b, 0x94, 0x29, 0x69, 0xa4, 0xd3,
+	0x58, 0x62, 0x28, 0x9f, 0xd0, 0xb8, 0xeb, 0x36, 0x48, 0xca, 0x85, 0xc4, 0xc5, 0x6f, 0xc9, 0x72,
+	0xbd, 0x58, 0xea, 0x54, 0x6a, 0x1c, 0x11, 0x4d, 0xf1, 0xb8, 0x1b, 0x51, 0x43, 0xba, 0x38, 0x96,
+	0x5c, 0x58, 0xfc, 0xd0, 0xe2, 0xa9, 0x66, 0xb9, 0x7b, 0xaa, 0x99, 0x05, 0xda, 0x25, 0x70, 0x51,
+	0xac, 0x70, 0xb9, 0xb0, 0xd0, 0x91, 0xd5, 0x68, 0x43, 0x3e, 0x70, 0xc1, 0x96, 0xb6, 0x55, 0x34,
+	0xb7, 0xc9, 0x24, 0x93, 0xa5, 0x30, 0x9f, 0xaa, 0x28, 0x9b, 0x97, 0xc9, 0x88, 0x22, 0xa9, 0xb5,
+	0xf5, 0x17, 0x00, 0x36, 0x07, 0x9a, 0x85, 0x94, 0x71, 0x6d, 0xa8, 0x7a, 0x43, 0x2e, 0x79, 0x42,
+	0x8c, 0x54, 0xce, 0x13, 0xb8, 0xa7, 0xa9, 0x48, 0xa8, 0x6a, 0x81, 0x0e, 0x38, 0xae, 0xf7, 0x5b,
+	0x3f, 0xbe, 0x9d, 0x34, 0x6d, 0xa2, 0xe7, 0x49, 0xa2, 0xa8, 0xd6, 0xaf, 0x8c, 0xe2, 0x82, 0x85,
+	0x96, 0xe7, 0xbc, 0x83, 0x0f, 0x63, 0x45, 0x89, 0xa1, 0x17, 0xe3, 0xca, 0xa5, 0x75, 0xaf, 0x03,
+	0x8e, 0xf7, 0x4f, 0x03, 0x64, 0x85, 0x36, 0x3c, 0xb2, 0xe1, 0xd1, 0x40, 0xb3, 0xf3, 0x42, 0xb2,
+	0x3c, 0xb7, 0xbf, 0x7b, 0xfd, 0xfb, 0xa8, 0x16, 0x1e, 0xc4, 0xeb, 0xdb, 0x4e, 0x0f, 0xee, 0x46,
+	0x23, 0x25, 0x5a, 0x3b, 0x85, 0x61, 0xbb, 0x32, 0xcc, 0x1b, 0x5e, 0xba, 0x9d, 0x4b, 0x2e, 0xac,
+	0xbe, 0x20, 0x9f, 0xed, 0x7f, 0x5a, 0x4c, 0x03, 0x1b, 0xcf, 0xf7, 0xe0, 0xa3, 0x6d, 0x17, 0x0d,
+	0xa9, 0xce, 0xa4, 0xd0, 0xd4, 0xff, 0x0e, 0xe0, 0xc1, 0x40, 0xb3, 0xd7, 0x59, 0x42, 0x0c, 0x7d,
+	0x59, 0x74, 0xe4, 0x3c, 0x85, 0x75, 0x32, 0x32, 0x43, 0xa9, 0xb8, 0x99, 0xdc, 0xd9, 0xc3, 0x8a,
+	0xea, 0x3c, 0x83, 0x7b, 0x65, 0xcb, 0xb6, 0x80, 0x36, 0xda, 0xf8, 0xdf, 0xa0, 0xf2, 0x88, 0x7e,
+	0x3d, 0xcf, 0xfb, 0x75, 0x31, 0x0d, 0x40, 0x68, 0x35, 0x67, 0xbd, 0x3c, 0xf6, 0xca, 0xed, 0xf3,
+	0x62, 0x1a, 0x74, 0x56, 0xcf, 0x78, 0x55, 0x3e, 0xe4, 0xad, 0xa8, 0x7e, 0x1b, 0x1e, 0xde, 0xda,
+	0xaa, 0x6e, 0x76, 0xfa, 0x0b, 0xc0, 0x9d, 0x81, 0x66, 0x4e, 0x0a, 0x1b, 0x9b, 0xef, 0xfc, 0x78,
+	0x4b, 0xb4, 0x6d, 0x3d, 0xb9, 0xf8, 0x3f, 0x89, 0xd5, 0xb1, 0xce, 0x7b, 0xf8, 0x60, 0xad, 0x4c,
+	0x7f, 0xbb, 0xc1, 0xbf, 0x1c, 0x37, 0xb8, 0x9b, 0x53, 0xf9, 0xbb, 0xf7, 0x3f, 0xe6, 0xad, 0xf5,
+	0x5f, 0x5c, 0xcf, 0x3c, 0x70, 0x33, 0xf3, 0xc0, 0x9f, 0x99, 0x07, 0xbe, 0xcc, 0xbd, 0xda, 0xcd,
+	0xdc, 0xab, 0xfd, 0x9c, 0x7b, 0xb5, 0xb7, 0x88, 0x71, 0x33, 0x1c, 0x45, 0x28, 0x96, 0x69, 0xd1,
+	0xd9, 0xe5, 0xc4, 0x0c, 0xf9, 0xa8, 0x9c, 0x4f, 0xd6, 0xca, 0x34, 0x93, 0x8c, 0xea, 0x68, 0xaf,
+	0xf8, 0x24, 0x7a, 0x7f, 0x03, 0x00, 0x00, 0xff, 0xff, 0xcb, 0xc5, 0xe6, 0xe2, 0x01, 0x04, 0x00,
+	0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -171,8 +282,16 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
-	// UpdateParams defines a (governance) operation for updating the module
-	// parameters. The authority defaults to the x/gov module account.
+	// RegisterValidator validates and executes a validator registration:
+	// - verifies sender/operator match,
+	// - burns the required fee,
+	// - validates min self-delegation, then
+	// - creates the validator with staked self-delegation.
+	//
+	// Direct MsgCreateValidator is blocked; this is the only path.
+	RegisterValidator(ctx context.Context, in *MsgRegisterValidator, opts ...grpc.CallOption) (*MsgRegisterValidatorResponse, error)
+	// UpdateParams defines a (governance) operation for updating the module parameters.
+	// The authority defaults to the x/gov module account.
 	UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error)
 }
 
@@ -182,6 +301,15 @@ type msgClient struct {
 
 func NewMsgClient(cc grpc1.ClientConn) MsgClient {
 	return &msgClient{cc}
+}
+
+func (c *msgClient) RegisterValidator(ctx context.Context, in *MsgRegisterValidator, opts ...grpc.CallOption) (*MsgRegisterValidatorResponse, error) {
+	out := new(MsgRegisterValidatorResponse)
+	err := c.cc.Invoke(ctx, "/monochain.mono.v1.Msg/RegisterValidator", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *msgClient) UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error) {
@@ -195,8 +323,16 @@ func (c *msgClient) UpdateParams(ctx context.Context, in *MsgUpdateParams, opts 
 
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
-	// UpdateParams defines a (governance) operation for updating the module
-	// parameters. The authority defaults to the x/gov module account.
+	// RegisterValidator validates and executes a validator registration:
+	// - verifies sender/operator match,
+	// - burns the required fee,
+	// - validates min self-delegation, then
+	// - creates the validator with staked self-delegation.
+	//
+	// Direct MsgCreateValidator is blocked; this is the only path.
+	RegisterValidator(context.Context, *MsgRegisterValidator) (*MsgRegisterValidatorResponse, error)
+	// UpdateParams defines a (governance) operation for updating the module parameters.
+	// The authority defaults to the x/gov module account.
 	UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error)
 }
 
@@ -204,12 +340,33 @@ type MsgServer interface {
 type UnimplementedMsgServer struct {
 }
 
+func (*UnimplementedMsgServer) RegisterValidator(ctx context.Context, req *MsgRegisterValidator) (*MsgRegisterValidatorResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterValidator not implemented")
+}
 func (*UnimplementedMsgServer) UpdateParams(ctx context.Context, req *MsgUpdateParams) (*MsgUpdateParamsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateParams not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
 	s.RegisterService(&_Msg_serviceDesc, srv)
+}
+
+func _Msg_RegisterValidator_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgRegisterValidator)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).RegisterValidator(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/monochain.mono.v1.Msg/RegisterValidator",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).RegisterValidator(ctx, req.(*MsgRegisterValidator))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Msg_UpdateParams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -236,12 +393,89 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*MsgServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "RegisterValidator",
+			Handler:    _Msg_RegisterValidator_Handler,
+		},
+		{
 			MethodName: "UpdateParams",
 			Handler:    _Msg_UpdateParams_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "monochain/mono/v1/tx.proto",
+}
+
+func (m *MsgRegisterValidator) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgRegisterValidator) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgRegisterValidator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Burn.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintTx(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x1a
+	{
+		size, err := m.CreateValidator.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintTx(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x12
+	if len(m.Sender) > 0 {
+		i -= len(m.Sender)
+		copy(dAtA[i:], m.Sender)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Sender)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgRegisterValidatorResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgRegisterValidatorResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgRegisterValidatorResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
 }
 
 func (m *MsgUpdateParams) Marshal() (dAtA []byte, err error) {
@@ -318,6 +552,32 @@ func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
+func (m *MsgRegisterValidator) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Sender)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = m.CreateValidator.Size()
+	n += 1 + l + sovTx(uint64(l))
+	l = m.Burn.Size()
+	n += 1 + l + sovTx(uint64(l))
+	return n
+}
+
+func (m *MsgRegisterValidatorResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
 func (m *MsgUpdateParams) Size() (n int) {
 	if m == nil {
 		return 0
@@ -347,6 +607,204 @@ func sovTx(x uint64) (n int) {
 }
 func sozTx(x uint64) (n int) {
 	return sovTx(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *MsgRegisterValidator) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgRegisterValidator: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgRegisterValidator: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Sender", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Sender = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreateValidator", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.CreateValidator.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Burn", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Burn.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgRegisterValidatorResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgRegisterValidatorResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgRegisterValidatorResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 func (m *MsgUpdateParams) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)

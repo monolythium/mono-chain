@@ -10,8 +10,5 @@ option go_package = "github.com/monolythium/mono-chain/x/mono/types";
 // GenesisState defines the mono module's genesis state.
 message GenesisState {
   // params defines all the parameters of the module.
-  Params params = 1 [
-    (gogoproto.nullable) = false,
-    (amino.dont_omitempty) = true
-  ];
+  Params params = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
 }

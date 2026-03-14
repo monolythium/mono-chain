@@ -11,14 +11,12 @@ import (
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	burnmoduletypes "github.com/monolythium/mono-chain/x/burn/types"
 	"github.com/monolythium/mono-chain/x/mono/keeper"
 	"github.com/monolythium/mono-chain/x/mono/types"
 )
 
-// SimulateValidatorRegistration generates a multi-msg tx containing
-// MsgBurn (registration fee) + MsgCreateValidator, mirroring the
-// real validator registration flow enforced by ValidatorRegistrationBurnDecorator.
+// SimulateValidatorRegistration generates a MsgRegisterValidator tx
+// containing the registration burn + validator creation in a single message.
 func SimulateValidatorRegistration(
 	ak types.AuthKeeper,
 	bk types.BankKeeper,
@@ -27,17 +25,15 @@ func SimulateValidatorRegistration(
 ) simtypes.Operation {
 	return func(r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
-		msgType := sdk.MsgTypeURL(&stakingtypes.MsgCreateValidator{})
+		msgType := sdk.MsgTypeURL(&types.MsgRegisterValidator{})
 
 		params, err := mk.Params.Get(ctx)
 		if err != nil {
 			return simtypes.NoOpMsg(types.ModuleName, msgType, "failed to read params"), nil, nil
 		}
 
-		regFee := params.ValidatorRegistrationFee
-		if regFee.IsZero() {
-			return simtypes.NoOpMsg(types.ModuleName, msgType, "registration fee disabled"), nil, nil
-		}
+		regBurn := params.ValidatorRegistrationBurn
+		minSelfDel := params.ValidatorMinSelfDelegation
 
 		simAccount, _ := simtypes.RandomAcc(r, accs)
 		account := ak.GetAccount(ctx, simAccount.Address)
@@ -49,9 +45,9 @@ func SimulateValidatorRegistration(
 		bondDenom := sdk.DefaultBondDenom
 		available := spendable.AmountOf(bondDenom)
 
-		// Self-delegation matches registration fee amount
-		selfDelegationAmt := regFee.Amount
-		totalNeeded := regFee.Amount.Add(selfDelegationAmt)
+		// Self-delegation uses the governance-set minimum
+		selfDelegationAmt := minSelfDel.Amount
+		totalNeeded := regBurn.Amount.Add(selfDelegationAmt)
 
 		if available.LT(totalNeeded) {
 			return simtypes.NoOpMsg(types.ModuleName, msgType, "insufficient balance"), nil, nil
@@ -68,11 +64,6 @@ func SimulateValidatorRegistration(
 		fees, err := simtypes.RandomFees(r, ctx, remaining)
 		if err != nil {
 			return simtypes.NoOpMsg(types.ModuleName, msgType, "random fees failed"), nil, nil
-		}
-
-		msgBurn := &burnmoduletypes.MsgBurn{
-			FromAddress: simAccount.Address.String(),
-			Amount:      regFee,
 		}
 
 		valAddr := sdk.ValAddress(simAccount.Address)
@@ -93,10 +84,16 @@ func SimulateValidatorRegistration(
 			return simtypes.NoOpMsg(types.ModuleName, msgType, "create validator msg failed"), nil, nil
 		}
 
+		msgRegisterVal := &types.MsgRegisterValidator{
+			Sender:          simAccount.Address.String(),
+			CreateValidator: *msgCreateVal,
+			Burn:            regBurn,
+		}
+
 		tx, err := sims.GenSignedMockTx(
 			r,
 			txGen,
-			[]sdk.Msg{msgBurn, msgCreateVal},
+			[]sdk.Msg{msgRegisterVal},
 			fees,
 			sims.DefaultGenTxGas,
 			chainID,
@@ -113,6 +110,6 @@ func SimulateValidatorRegistration(
 			return simtypes.NoOpMsg(types.ModuleName, msgType, err.Error()), nil, nil
 		}
 
-		return simtypes.NewOperationMsg(msgCreateVal, true, ""), nil, nil
+		return simtypes.NewOperationMsg(msgRegisterVal, true, ""), nil, nil
 	}
 }

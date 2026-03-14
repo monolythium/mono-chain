@@ -9,7 +9,7 @@ import "cosmos/base/v1beta1/coin.proto";
 option go_package = "github.com/monolythium/mono-chain/x/mono/types";
 
 message Params {
-  option (amino.name) = "monochain/x/mono/Params";
+  option (amino.name)      = "monochain/x/mono/Params";
   option (gogoproto.equal) = true;
 
   string fee_burn_percent = 1 [
@@ -18,7 +18,7 @@ message Params {
     (gogoproto.nullable)   = false
   ];
 
-  cosmos.base.v1beta1.Coin validator_registration_fee = 2 [
-    (gogoproto.nullable) = false
-  ];
+  cosmos.base.v1beta1.Coin validator_registration_burn = 2 [(gogoproto.nullable) = false];
+
+  cosmos.base.v1beta1.Coin validator_min_self_delegation = 3 [(gogoproto.nullable) = false];
 }
