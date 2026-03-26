@@ -1,17 +1,31 @@
 package types
 
-// NewParams creates a new Params instance.
-func NewParams() Params {
-	return Params{}
+import (
+	"cosmossdk.io/math"
+)
+
+var DefaultFeeBurnPercent = math.LegacyZeroDec()
+
+func NewParams(feeBurnPercent math.LegacyDec) Params {
+	return Params{
+		FeeBurnPercent: feeBurnPercent,
+	}
 }
 
-// DefaultParams returns a default set of parameters.
 func DefaultParams() Params {
-	return NewParams()
+	return NewParams(DefaultFeeBurnPercent)
 }
 
-// Validate validates the set of params.
 func (p Params) Validate() error {
+	return validateFeeBurnPercent(p.FeeBurnPercent)
+}
+
+func validateFeeBurnPercent(v math.LegacyDec) error {
+	if v.IsNil() ||
+		v.IsNegative() ||
+		v.GT(math.LegacyOneDec()) {
+		return ErrInvalidFeeBurnPercent
+	}
 
 	return nil
 }

@@ -1,8 +1,6 @@
 package types
 
 const (
-	EventTypeBurn = "burn"
-
-	AttributeKeyBurner = "burner"
-	AttributeKeyAmount = "amount"
+	EventTypeFeeBurn        = "fee_burn"
+	AttributeKeyBurnPercent = "burn_percent"
 )

@@ -1,0 +1,17 @@
+syntax = "proto3";
+package monolythium.validator.v1;
+
+import "amino/amino.proto";
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "github.com/monolythium/mono-chain/x/validator/types";
+
+message Params {
+  option (amino.name)      = "monolythium/x/validator/Params";
+  option (gogoproto.equal) = true;
+
+  cosmos.base.v1beta1.Coin validator_registration_burn = 1 [(gogoproto.nullable) = false];
+
+  cosmos.base.v1beta1.Coin validator_min_self_delegation = 2 [(gogoproto.nullable) = false];
+}

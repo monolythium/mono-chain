@@ -1,0 +1,57 @@
+syntax = "proto3";
+package monolythium.validator.v1;
+
+import "amino/amino.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos/msg/v1/msg.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmos/staking/v1beta1/tx.proto";
+import "gogoproto/gogo.proto";
+import "monolythium/validator/v1/params.proto";
+
+option go_package = "github.com/monolythium/mono-chain/x/validator/types";
+
+// Msg defines the Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // RegisterValidator enforces additional validator registration requirements, it:
+  // - verifies the sender,
+  // - burns the required registration fee,
+  // - validates min self-delegation, then
+  // - calls the x/staking module to handle the final registration steps.
+  //
+  // Direct MsgCreateValidator is blocked; this is the only path.
+  rpc RegisterValidator(MsgRegisterValidator) returns (MsgRegisterValidatorResponse);
+
+  // UpdateParams defines a (governance) operation for updating the module parameters.
+  // The authority defaults to the x/gov module account.
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+}
+
+message MsgRegisterValidator {
+  option (cosmos.msg.v1.signer) = "sender";
+  string sender                 = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  cosmos.staking.v1beta1.MsgCreateValidator create_validator = 2 [(gogoproto.nullable) = false];
+
+  cosmos.base.v1beta1.Coin burn = 3 [(gogoproto.nullable) = false];
+}
+
+message MsgRegisterValidatorResponse {}
+
+// MsgUpdateParams is the Msg/UpdateParams request type.
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name)           = "monolythium/x/validator/MsgUpdateParams";
+
+  // authority is the address that controls the module (defaults to x/gov unless overwritten).
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // params defines the module parameters to update.
+  Params params = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// MsgUpdateParamsResponse defines the response structure for executing a
+// MsgUpdateParams message.
+message MsgUpdateParamsResponse {}

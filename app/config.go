@@ -9,14 +9,14 @@ import (
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	protocolpooltypes "github.com/cosmos/cosmos-sdk/x/protocolpool/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	corevm "github.com/ethereum/go-ethereum/core/vm"
 	utils "github.com/cosmos/evm/utils"
 	erc20types "github.com/cosmos/evm/x/erc20/types"
 	feemarkettypes "github.com/cosmos/evm/x/feemarket/types"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
+	corevm "github.com/ethereum/go-ethereum/core/vm"
 	burnmoduletypes "github.com/monolythium/mono-chain/x/burn/types"
-	monomoduletypes "github.com/monolythium/mono-chain/x/mono/types"
+	validatormoduletypes "github.com/monolythium/mono-chain/x/validator/types"
 )
 
 const (
@@ -46,7 +46,7 @@ var maccPerms = map[string][]string{
 	stakingtypes.BondedPoolName:                 {authtypes.Burner, authtypes.Staking},
 	stakingtypes.NotBondedPoolName:              {authtypes.Burner, authtypes.Staking},
 	burnmoduletypes.ModuleName:                  {authtypes.Burner},
-	monomoduletypes.ModuleName:                  {authtypes.Burner},
+	validatormoduletypes.ModuleName:             nil,
 	minttypes.ModuleName:                        {authtypes.Minter},
 	// EVM module accounts
 	evmtypes.ModuleName:         {authtypes.Minter, authtypes.Burner},

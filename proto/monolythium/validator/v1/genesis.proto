@@ -1,0 +1,13 @@
+syntax = "proto3";
+package monolythium.validator.v1;
+
+import "amino/amino.proto";
+import "gogoproto/gogo.proto";
+import "monolythium/validator/v1/params.proto";
+
+option go_package = "github.com/monolythium/mono-chain/x/validator/types";
+
+// GenesisState defines the validator module's genesis state.
+message GenesisState {
+  Params params = 1 [(gogoproto.nullable)   = false, (amino.dont_omitempty) = true];
+}

@@ -21,6 +21,9 @@ genesis:
             - denom: lyth
               exponent: 18
               aliases: []
+    burn:
+      params:
+        fee_burn_percent: "0.9"
     distribution:
       params:
         community_tax: "0.1"
@@ -84,15 +87,6 @@ genesis:
         inflation_min: "0.08"
         goal_bonded: "0.67"
         blocks_per_year: "15768000"
-    mono:
-      params:
-        fee_burn_percent: "0.9"
-        validator_registration_burn:
-          denom: alyth
-          amount: "100000000000000000000000"
-        validator_min_self_delegation:
-          denom: alyth
-          amount: "100000000000000000000000"
     protocolpool:
       params:
         enabled_distribution_denoms:
@@ -106,7 +100,14 @@ genesis:
         unbonding_time: "1814400s"
         max_validators: 53
         bond_denom: alyth
-
+    validator:
+      params:
+        validator_registration_burn:
+          denom: alyth
+          amount: "100000000000000000000000"
+        validator_min_self_delegation:
+          denom: alyth
+          amount: "100000000000000000000000"
 default_denom: alyth
 accounts:
   - name: alice

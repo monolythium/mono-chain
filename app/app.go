@@ -130,13 +130,13 @@ import (
 
 	// mono-chain imports
 	"github.com/monolythium/mono-chain/docs"
+	burnmodule "github.com/monolythium/mono-chain/x/burn"
 	burnmodulekeeper "github.com/monolythium/mono-chain/x/burn/keeper"
-	burnmodule "github.com/monolythium/mono-chain/x/burn/module"
 	burnmoduletypes "github.com/monolythium/mono-chain/x/burn/types"
-	monoante "github.com/monolythium/mono-chain/x/mono/ante"
-	monomodulekeeper "github.com/monolythium/mono-chain/x/mono/keeper"
-	monomodule "github.com/monolythium/mono-chain/x/mono/module"
-	monomoduletypes "github.com/monolythium/mono-chain/x/mono/types"
+	validatormodule "github.com/monolythium/mono-chain/x/validator"
+	validatorante "github.com/monolythium/mono-chain/x/validator/ante"
+	validatormodulekeeper "github.com/monolythium/mono-chain/x/validator/keeper"
+	validatormoduletypes "github.com/monolythium/mono-chain/x/validator/types"
 
 	// Simulation imports
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
@@ -180,8 +180,8 @@ type App struct {
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
 
 	// Custom keepers
-	BurnKeeper burnmodulekeeper.Keeper
-	MonoKeeper monomodulekeeper.Keeper
+	BurnKeeper      burnmodulekeeper.Keeper
+	ValidatorKeeper validatormodulekeeper.Keeper
 
 	// IBC keepers
 	IBCKeeper      *ibckeeper.Keeper
@@ -246,7 +246,7 @@ func New(
 		upgradetypes.StoreKey, feegrant.StoreKey, evidencetypes.StoreKey, authzkeeper.StoreKey,
 		// mono keys
 		burnmoduletypes.StoreKey,
-		monomoduletypes.StoreKey,
+		validatormoduletypes.StoreKey,
 		// ibc keys
 		ibcexported.StoreKey, ibctransfertypes.StoreKey,
 		// Cosmos EVM keys
@@ -389,25 +389,22 @@ func New(
 		runtime.NewKVStoreService(keys[burnmoduletypes.StoreKey]),
 		appCodec,
 		addressCodec,
-		authtypes.NewModuleAddress(govtypes.ModuleName),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		app.BankKeeper,
 	)
 
-	// Create the mono staking MsgServer
+	// Create the validator staking MsgServer
 	// shared by keeper (unwrapped) and precompile (wrapped)
-	monoStakingMsgServer := stakingkeeper.NewMsgServerImpl(app.StakingKeeper)
+	validatorStakingMsgServer := stakingkeeper.NewMsgServerImpl(app.StakingKeeper)
 
-	app.MonoKeeper = monomodulekeeper.NewKeeper(
-		runtime.NewKVStoreService(keys[monomoduletypes.StoreKey]),
+	app.ValidatorKeeper = validatormodulekeeper.NewKeeper(
+		runtime.NewKVStoreService(keys[validatormoduletypes.StoreKey]),
 		appCodec,
 		addressCodec,
-		authtypes.NewModuleAddress(govtypes.ModuleName),
-		app.BankKeeper,
-		app.StakingKeeper,
-		app.DistrKeeper,
-		monoStakingMsgServer,
-		burnmodulekeeper.NewMsgServerImpl(app.BurnKeeper),
 		evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		app.BurnKeeper,
+		validatorStakingMsgServer,
 	)
 
 	// Staking hooks for distribution + slashing
@@ -502,7 +499,7 @@ func New(
 	// Staking precompile with injected MsgServer to block MsgCreateValidator
 	wrappedStakingPrecompile := stakingprecompile.NewPrecompile(
 		*app.StakingKeeper,
-		monoante.NewRestrictedStakingMsgServer(monoStakingMsgServer),
+		validatorante.NewRestrictedStakingMsgServer(validatorStakingMsgServer),
 		stakingkeeper.NewQuerier(app.StakingKeeper),
 		app.BankKeeper,
 		evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
@@ -616,8 +613,8 @@ func New(
 		feemarket.NewAppModule(app.FeeMarketKeeper),
 		erc20.NewAppModule(app.Erc20Keeper, app.AccountKeeper),
 		// Monolythium modules
-		burnmodule.NewAppModule(appCodec, app.BurnKeeper, app.AccountKeeper, app.BankKeeper),
-		monomodule.NewAppModule(appCodec, app.MonoKeeper, app.AccountKeeper, app.BankKeeper),
+		burnmodule.NewAppModule(appCodec, app.BurnKeeper, addressCodec),
+		validatormodule.NewAppModule(appCodec, app.ValidatorKeeper, app.StakingKeeper),
 		//
 		protocolpool.NewAppModule(app.ProtocolPoolKeeper, app.AccountKeeper, app.BankKeeper),
 		tendermint.NewAppModule(tmLightClientModule),
@@ -652,9 +649,7 @@ func New(
 	// NOTE: staking module is required if HistoricalEntries param > 0
 	// NOTE: capability module's beginblocker must come before any modules using capabilities (e.g. IBC)
 	app.ModuleManager.SetOrderBeginBlockers(
-		// Economic pipeline - fees MUST be processed before mint
-		// mono/burn process tx fees first, THEN mint creates inflation
-		monomoduletypes.ModuleName,
+		// Economic pipeline - burn processes tx fees first, THEN mint creates inflation
 		burnmoduletypes.ModuleName,
 		minttypes.ModuleName,
 
@@ -729,9 +724,9 @@ func New(
 
 		// Custom modules + protocolpool MUST init before genutil
 		// genutil processes gentxs which trigger BeginBlocker,
-		// and mono's ProcessFeeSplit needs params set
+		// and mono's ProcessFeeBurn needs params set
 		burnmoduletypes.ModuleName,
-		monomoduletypes.ModuleName,
+		validatormoduletypes.ModuleName,
 		protocolpooltypes.ModuleName,
 
 		genutiltypes.ModuleName, evidencetypes.ModuleName, authz.ModuleName,
@@ -754,7 +749,7 @@ func New(
 	}
 
 	// Rejects bare MsgCreateValidator
-	app.SetCircuitBreaker(monoante.NewStakingCircuitBreaker())
+	app.SetCircuitBreaker(validatorante.NewStakingCircuitBreaker())
 
 	// TODO: Implement RegisterUpgradeHandlers when needed for chain upgrades
 	// app.RegisterUpgradeHandlers()

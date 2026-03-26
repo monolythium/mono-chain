@@ -1,0 +1,21 @@
+syntax = "proto3";
+package monolythium.burn.v1;
+
+import "amino/amino.proto";
+import "cosmos_proto/cosmos.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/monolythium/mono-chain/x/burn/types";
+
+// Params defines the parameters for the module.
+message Params {
+  option (amino.name) = "monolythium/x/burn/Params";
+  option (gogoproto.equal) = true;
+
+  string fee_burn_percent = 1 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable)   = false,
+    (amino.dont_omitempty) = true
+  ];
+}

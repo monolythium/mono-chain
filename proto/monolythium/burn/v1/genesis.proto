@@ -1,0 +1,35 @@
+syntax = "proto3";
+package monolythium.burn.v1;
+
+import "amino/amino.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos_proto/cosmos.proto";
+import "gogoproto/gogo.proto";
+import "monolythium/burn/v1/params.proto";
+
+option go_package = "github.com/monolythium/mono-chain/x/burn/types";
+
+// GenesisState defines the burn module's genesis state.
+message GenesisState {
+  Params params = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+
+  uint64 count = 2;
+
+  string total = 3 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable)   = false
+  ];
+
+  repeated AccountBurnRecord account_totals = 4 [(gogoproto.nullable) = false];
+}
+
+// AccountBurnRecord stores the cumulative burn total for a single account.
+message AccountBurnRecord {
+  string address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string total   = 2 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable)   = false
+  ];
+}

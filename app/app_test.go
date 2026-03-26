@@ -31,7 +31,7 @@ import (
 
 	"github.com/monolythium/mono-chain/app"
 	burnmoduletypes "github.com/monolythium/mono-chain/x/burn/types"
-	monomoduletypes "github.com/monolythium/mono-chain/x/mono/types"
+	validatormoduletypes "github.com/monolythium/mono-chain/x/validator/types"
 )
 
 func TestMain(m *testing.M) {
@@ -72,7 +72,7 @@ func TestAppInit_KeepersNonNil(t *testing.T) {
 	require.NotNil(t, a.FeeMarketKeeper)
 	require.NotNil(t, a.IBCKeeper)
 	require.NotNil(t, a.BurnKeeper)
-	require.NotNil(t, a.MonoKeeper)
+	require.NotNil(t, a.ValidatorKeeper)
 	require.NotNil(t, a.AuthzKeeper)
 	require.NotNil(t, a.FeeGrantKeeper)
 	require.NotNil(t, a.ModuleManager)
@@ -152,7 +152,7 @@ func TestModuleAccountPerms_Custom(t *testing.T) {
 	perms := app.GetMaccPerms()
 
 	require.Contains(t, perms[burnmoduletypes.ModuleName], authtypes.Burner)
-	require.Contains(t, perms[monomoduletypes.ModuleName], authtypes.Burner)
+	require.Nil(t, perms[validatormoduletypes.ModuleName])
 }
 
 func TestAddressCodec_Bech32Roundtrip(t *testing.T) {
@@ -236,7 +236,7 @@ func TestDefaultGenesis_CustomModulesPresent(t *testing.T) {
 	_, hasBurn := genesis[burnmoduletypes.ModuleName]
 	require.True(t, hasBurn)
 
-	_, hasMono := genesis[monomoduletypes.ModuleName]
+	_, hasMono := genesis[validatormoduletypes.ModuleName]
 	require.True(t, hasMono)
 }
 
