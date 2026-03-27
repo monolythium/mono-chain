@@ -5,10 +5,8 @@ builds:
     binary: monod
     goos:
       - linux
-      - darwin
     goarch:
       - amd64
-      - arm64
     env:
       - CGO_ENABLED=1
     ldflags:
