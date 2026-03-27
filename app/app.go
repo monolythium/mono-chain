@@ -924,8 +924,22 @@ func (app *App) setPostHandler() {
 // Accessor methods
 
 // DefaultGenesis returns default genesis state for all modules.
+// Overrides cosmos/evm defaults (aatom) with Monolythium's native denom (alyth)
+// and enables all static precompiles.
 func (app *App) DefaultGenesis() map[string]json.RawMessage {
-	return app.BasicModuleManager.DefaultGenesis(app.appCodec)
+	genesis := app.BasicModuleManager.DefaultGenesis(app.appCodec)
+
+	// Override EVM module defaults: denom aatom → alyth, enable precompiles
+	if raw, ok := genesis[evmtypes.ModuleName]; ok {
+		var evmGenesis evmtypes.GenesisState
+		app.appCodec.MustUnmarshalJSON(raw, &evmGenesis)
+		evmGenesis.Params.EvmDenom = DefaultBondDenom
+		evmGenesis.Params.ExtendedDenomOptions.ExtendedDenom = DefaultBondDenom
+		evmGenesis.Params.ActiveStaticPrecompiles = evmtypes.AvailableStaticPrecompiles
+		genesis[evmtypes.ModuleName] = app.appCodec.MustMarshalJSON(&evmGenesis)
+	}
+
+	return genesis
 }
 
 // LegacyAmino returns App's amino codec.
