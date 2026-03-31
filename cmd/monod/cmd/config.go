@@ -1,9 +1,14 @@
 package cmd
 
 import (
+	"strconv"
+	"strings"
+
 	cmtcfg "github.com/cometbft/cometbft/config"
 	evmconfig "github.com/cosmos/evm/config"
 )
+
+const defaultMinGasPrices = "10000000000alyth"
 
 // initCometBFTConfig helps to override default CometBFT Config values.
 // return cmtcfg.DefaultConfig if no custom configuration is required for the application.
@@ -19,32 +24,44 @@ func initCometBFTConfig() *cmtcfg.Config {
 
 // initAppConfig returns the EVM-extended app config template and default values.
 // This adds JSON-RPC, TLS, and EVM config sections to app.toml.
-func initAppConfig() (string, interface{}) {
-	// Optionally allow the chain developer to overwrite the SDK's default
-	// server config.
-	// The SDK's default minimum gas price is set to "" (empty value) inside
-	// app.toml. If left empty by validators, the node will halt on startup.
-	// However, the chain developer can set a default app.toml value for their
-	// validators here.
-	//
-	// In summary:
-	// - if you leave srvCfg.MinGasPrices = "", all validators MUST tweak their
-	//   own app.toml config,
-	// - if you set srvCfg.MinGasPrices non-empty, validators CAN tweak their
-	//   own app.toml to override, or use this default value.
-	//
-	// In tests, we set the min gas prices to 0.
-	// srvCfg.MinGasPrices = "0alyth"
+//
+// If chainID is provided in Cosmos format (e.g. "mono_6940-1"), the EVM chain
+// ID is derived automatically. Otherwise falls back to the library default.
+func initAppConfig(chainID string) (string, interface{}) {
+	var evmChainID uint64 = evmconfig.EVMChainID
+	if id, ok := parseEVMChainID(chainID); ok {
+		evmChainID = id
+	}
 
-	// Edit the default template file
-	//
-	// customAppTemplate := serverconfig.DefaultConfigTemplate + `
-	// [wasm]
-	// # This is the maximum sdk gas (wasm and storage) that we allow for any x/wasm "smart" queries
-	// query_gas_limit = 300000
-	// # This is the number of wasm vm instances we keep cached in memory for speed-up
-	// # Warning: this is currently unstable and may lead to crashes, best to keep for 0 unless testing locally
-	// lru_size = 0`
+	tmpl, cfg := evmconfig.InitAppConfig("alyth", evmChainID)
 
-	return evmconfig.InitAppConfig("alyth", evmconfig.EVMChainID)
+	// Override the library default ("0alyth") with a production-safe minimum.
+	// Validators can still override this in their own app.toml.
+	appCfg, ok := cfg.(evmconfig.EVMAppConfig)
+	if ok {
+		appCfg.Config.MinGasPrices = defaultMinGasPrices
+		return tmpl, appCfg
+	}
+
+	return tmpl, cfg
+}
+
+// parseEVMChainID extracts the EVM chain ID from a Cosmos chain ID.
+// Format: "{name}_{evm-chain-id}-{version}" e.g. "mono_6940-1" → 6940.
+func parseEVMChainID(chainID string) (uint64, bool) {
+	// Split on underscore: ["mono", "6940-1"]
+	parts := strings.SplitN(chainID, "_", 2)
+	if len(parts) != 2 {
+		return 0, false
+	}
+	// Split on dash: ["6940", "1"]
+	numParts := strings.SplitN(parts[1], "-", 2)
+	if len(numParts) < 1 {
+		return 0, false
+	}
+	id, err := strconv.ParseUint(numParts[0], 10, 64)
+	if err != nil {
+		return 0, false
+	}
+	return id, true
 }

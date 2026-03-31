@@ -71,7 +71,8 @@ func NewRootCmd() *cobra.Command {
 				return err
 			}
 
-			customAppTemplate, customAppConfig := initAppConfig()
+			chainID, _ := cmd.Flags().GetString("chain-id")
+			customAppTemplate, customAppConfig := initAppConfig(chainID)
 			customCMTConfig := initCometBFTConfig()
 
 			return server.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, customCMTConfig)
