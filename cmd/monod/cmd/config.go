@@ -1,50 +1,100 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+
 	cmtcfg "github.com/cometbft/cometbft/config"
 	evmconfig "github.com/cosmos/evm/config"
+	"github.com/spf13/cobra"
 )
+
+const defaultMinGasPrices = "10000000000alyth"
 
 // initCometBFTConfig helps to override default CometBFT Config values.
 // return cmtcfg.DefaultConfig if no custom configuration is required for the application.
 func initCometBFTConfig() *cmtcfg.Config {
 	cfg := cmtcfg.DefaultConfig()
-
-	// these values put a higher strain on node memory
-	// cfg.P2P.MaxNumInboundPeers = 100
-	// cfg.P2P.MaxNumOutboundPeers = 40
-
 	return cfg
 }
 
 // initAppConfig returns the EVM-extended app config template and default values.
 // This adds JSON-RPC, TLS, and EVM config sections to app.toml.
 func initAppConfig() (string, interface{}) {
-	// Optionally allow the chain developer to overwrite the SDK's default
-	// server config.
-	// The SDK's default minimum gas price is set to "" (empty value) inside
-	// app.toml. If left empty by validators, the node will halt on startup.
-	// However, the chain developer can set a default app.toml value for their
-	// validators here.
-	//
-	// In summary:
-	// - if you leave srvCfg.MinGasPrices = "", all validators MUST tweak their
-	//   own app.toml config,
-	// - if you set srvCfg.MinGasPrices non-empty, validators CAN tweak their
-	//   own app.toml to override, or use this default value.
-	//
-	// In tests, we set the min gas prices to 0.
-	// srvCfg.MinGasPrices = "0alyth"
+	tmpl, cfg := evmconfig.InitAppConfig("alyth", evmconfig.EVMChainID)
 
-	// Edit the default template file
-	//
-	// customAppTemplate := serverconfig.DefaultConfigTemplate + `
-	// [wasm]
-	// # This is the maximum sdk gas (wasm and storage) that we allow for any x/wasm "smart" queries
-	// query_gas_limit = 300000
-	// # This is the number of wasm vm instances we keep cached in memory for speed-up
-	// # Warning: this is currently unstable and may lead to crashes, best to keep for 0 unless testing locally
-	// lru_size = 0`
+	// Override the library default ("0alyth") with a production-safe minimum.
+	// Validators can still override this in their own app.toml.
+	appCfg, ok := cfg.(evmconfig.EVMAppConfig)
+	if ok {
+		appCfg.Config.MinGasPrices = defaultMinGasPrices
+		return tmpl, appCfg
+	}
 
-	return evmconfig.InitAppConfig("alyth", evmconfig.EVMChainID)
+	return tmpl, cfg
+}
+
+// wrapInitCmd adds a post-init hook that patches app.toml with the correct
+// evm-chain-id derived from --chain-id (e.g. "mono_6940-1" → 6940).
+func wrapInitCmd(initCmd *cobra.Command) *cobra.Command {
+	originalRunE := initCmd.RunE
+	initCmd.RunE = func(cmd *cobra.Command, args []string) error {
+		if err := originalRunE(cmd, args); err != nil {
+			return err
+		}
+
+		chainID, _ := cmd.Flags().GetString("chain-id")
+		evmID, ok := parseEVMChainID(chainID)
+		if !ok {
+			return nil
+		}
+
+		homeDir, _ := cmd.Flags().GetString("home")
+		if homeDir == "" {
+			homeDir = os.ExpandEnv("$HOME/.mono")
+		}
+
+		appTomlPath := filepath.Join(homeDir, "config", "app.toml")
+		data, err := os.ReadFile(appTomlPath)
+		if err != nil {
+			return fmt.Errorf("failed to read app.toml: %w", err)
+		}
+
+		lines := strings.Split(string(data), "\n")
+		for i, line := range lines {
+			if strings.HasPrefix(strings.TrimSpace(line), "evm-chain-id") {
+				lines[i] = fmt.Sprintf("evm-chain-id = %d", evmID)
+				break
+			}
+		}
+
+		if err := os.WriteFile(appTomlPath, []byte(strings.Join(lines, "\n")), 0644); err != nil {
+			return fmt.Errorf("failed to write app.toml: %w", err)
+		}
+
+		fmt.Printf("Set evm-chain-id = %d (derived from %s)\n", evmID, chainID)
+		return nil
+	}
+	return initCmd
+}
+
+// parseEVMChainID extracts the EVM chain ID from a Cosmos chain ID.
+// Format: "{name}_{evm-chain-id}-{version}" e.g. "mono_6940-1" → 6940.
+func parseEVMChainID(chainID string) (uint64, bool) {
+	parts := strings.SplitN(chainID, "_", 2)
+	if len(parts) != 2 {
+		return 0, false
+	}
+	numParts := strings.SplitN(parts[1], "-", 2)
+	if len(numParts) < 1 {
+		return 0, false
+	}
+	id, err := strconv.ParseUint(numParts[0], 10, 64)
+	if err != nil {
+		return 0, false
+	}
+	return id, true
 }
