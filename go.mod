@@ -11,7 +11,7 @@ replace (
 	// cosmos/evm requires cosmos-patched keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
 
-	github.com/cometbft/cometbft => github.com/monolythium/lythiumbft v0.38.21-mono.1
+	github.com/cometbft/cometbft => github.com/monolythium/lythiumbft v0.38.21-mono.3
 
 	// GHSA-fj2x-735w-74vq: unchecked memory allocation in vector deserialization
 	// indirect via cosmos/evm -> geth/core/vm -> gnark-crypto/ecc (BN254 precompiles)

@@ -1740,8 +1740,8 @@ github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742/go.mod h1:bx2lN
 github.com/modern-go/reflect2 v1.0.1/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
 github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9Gz0M=
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
-github.com/monolythium/lythiumbft v0.38.21-mono.1 h1:l1pWG6mpIkBDS7rjIqWOvqO8FzgmW3MaUltrV4E9urY=
-github.com/monolythium/lythiumbft v0.38.21-mono.1/go.mod h1:5uln5gwb24fTP8oHIA7c/n+Ou1J9GvtjtUphpfbWdNY=
+github.com/monolythium/lythiumbft v0.38.21-mono.3 h1:zZMt6otVWExrhP4YUmras4aVCbGCOuq6Qidf0zqSKlg=
+github.com/monolythium/lythiumbft v0.38.21-mono.3/go.mod h1:qjxcAomCbgi0q59U5bkowMKP3Y39VpPVd4jicok5epw=
 github.com/moricho/tparallel v0.3.2 h1:odr8aZVFA3NZrNybggMkYO3rgPRcqjeQUlBBFVxKHTI=
 github.com/moricho/tparallel v0.3.2/go.mod h1:OQ+K3b4Ln3l2TZveGCywybl68glfLEwFGqvnjok8b+U=
 github.com/morikuni/aec v1.1.0 h1:vBBl0pUnvi/Je71dsRrhMBtreIqNMYErSAbEeb8jrXQ=
