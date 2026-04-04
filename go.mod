@@ -1,6 +1,6 @@
 module github.com/monolythium/mono-chain
 
-go 1.25.7
+go 1.25.8
 
 replace (
 	// CVE-2026-26958: MultiScalarMult invalid results with non-identity receiver
@@ -59,10 +59,20 @@ require (
 	cosmossdk.io/x/evidence v0.2.0
 	cosmossdk.io/x/feegrant v0.2.0
 	cosmossdk.io/x/upgrade v0.2.0
+
+	// CVE-2025-24371: malicious peer causes node stuck in blocksync - PATCHED
+	// fixed in v0.38.19; replaced with lythiumbft v0.38.21-mono.x
 	github.com/cometbft/cometbft v0.38.21
 	github.com/cosmos/cosmos-db v1.1.3
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
+
+	// GO-2023-1821, GO-2023-1881: x/crisis halt failure and fee bypass - UNREACHABLE
+	// x/crisis module deprecated in v0.53; not imported or registered
+	// GO-2024-2584: slashing evasion during re-delegation - PATCHED in v0.47.10
 	github.com/cosmos/cosmos-sdk v0.53.6
+
+	// GO-2025-3684: partial precompile state writes on revert - PATCHED in v0.6.0
+	// fixed via AddPrecompileFn journal/revert in v0.6.0
 	github.com/cosmos/evm v0.6.0
 	github.com/cosmos/gogoproto v1.7.2
 	github.com/cosmos/ibc-go/v10 v10.5.0
@@ -82,6 +92,7 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
 	google.golang.org/genproto/googleapis/api v0.0.0-20260128011058-8636f8732409
+
 	// CVE-2026-33186: gRPC-Go authorization bypass via missing leading slash in :path - UNREACHABLE
 	// required by cosmos-sdk; no gRPC auth interceptors in use
 	// TODO: Remove comment after cosmos-sdk bumps grpc >= v1.79.3
@@ -149,6 +160,10 @@ require (
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/ashanbrown/forbidigo v1.6.0 // indirect
 	github.com/ashanbrown/makezero v1.2.0 // indirect
+
+	// CVE-2020-8911: S3 client-side encryption CBC padding oracle - UNREACHABLE
+	// CVE-2020-8912: S3 client-side encryption key negotiation bypass - UNREACHABLE
+	// indirect via x/upgrade -> go-getter; only standard S3 download used, s3crypto not imported
 	github.com/aws/aws-sdk-go v1.49.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
@@ -219,6 +234,10 @@ require (
 	github.com/dlclark/regexp2 v1.11.0 // indirect
 	github.com/docker/cli v29.2.0+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
+
+	// CVE-2026-33997: off-by-one error in plugin privilege validation - UNREACHABLE
+	// CVE-2026-34040: AuthZ plugin bypass with oversized request body - UNREACHABLE
+	// indirect via buf tooling; not compiled into monod binary
 	github.com/docker/docker v28.5.2+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.9.5 // indirect
 	github.com/docker/go-connections v0.6.0 // indirect
@@ -247,6 +266,9 @@ require (
 	github.com/ghostiam/protogetter v0.3.9 // indirect
 	github.com/go-chi/chi/v5 v5.2.4 // indirect
 	github.com/go-critic/go-critic v0.12.0 // indirect
+
+	// CVE-2026-34986: panic in JWE decryption - UNREACHABLE
+	// indirect via x/upgrade -> go-getter -> cloud.google.com/go/storage -> grpc/xds
 	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
 	github.com/go-kit/kit v0.13.0 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
