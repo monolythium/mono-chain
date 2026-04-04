@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
 	"cosmossdk.io/log"
@@ -34,7 +35,7 @@ func initRootCmd(
 	basicManager module.BasicManager,
 ) {
 	rootCmd.AddCommand(
-		genutilcli.InitCmd(basicManager, app.DefaultNodeHome),
+		monoInitCmd(basicManager),
 		NewInPlaceTestnetCmd(),
 		NewTestnetMultiNodeCmd(basicManager, banktypes.GenesisBalancesIterator{}),
 		confixcmd.ConfigCommand(),
@@ -69,9 +70,44 @@ func initRootCmd(
 	}
 }
 
-// addModuleInitFlags adds more flags to the start command.
-func addModuleInitFlags(startCmd *cobra.Command) {
+// monoInitCmd wraps the SDK's init command with --network-id support.
+// When provided, --network-id propagates to --chain-id for genesis.json.
+func monoInitCmd(basicManager module.BasicManager) *cobra.Command {
+	initCmd := genutilcli.InitCmd(basicManager, app.DefaultNodeHome)
+	initCmd.Flags().String(FlagNetworkID, "", FlagNetworkIDUse)
+
+	originalRunE := initCmd.RunE
+	initCmd.RunE = func(cmd *cobra.Command, args []string) error {
+		if err := setNetworkIDFlag(cmd.Flags()); err != nil {
+			return err
+		}
+
+		return originalRunE(cmd, args)
+	}
+
+	return initCmd
 }
+
+// setNetworkIDFlag propagates --network-id to --chain-id, erroring on conflicts.
+func setNetworkIDFlag(fs *pflag.FlagSet) error {
+	networkID, err := fs.GetString(FlagNetworkID)
+	if err != nil {
+		return err
+	}
+
+	if networkID == "" {
+		return nil
+	}
+
+	if fs.Changed(flags.FlagChainID) {
+		return ErrInvalidFlagsCombo
+	}
+
+	return fs.Set(flags.FlagChainID, networkID)
+}
+
+// addModuleInitFlags adds more flags to the start command.
+func addModuleInitFlags(startCmd *cobra.Command) {}
 
 func queryCommand() *cobra.Command {
 	cmd := &cobra.Command{
